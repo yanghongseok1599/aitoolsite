@@ -35,3 +35,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Windows special files
+nul
+
+# Firebase Admin SDK keys (NEVER commit these!)
+*firebase-adminsdk*.json

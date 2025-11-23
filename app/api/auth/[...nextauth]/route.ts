@@ -1,18 +1,23 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import KakaoProvider from 'next-auth/providers/kakao'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Google OAuth Provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
-    KakaoProvider({
-      clientId: process.env.KAKAO_CLIENT_ID || '',
-      clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
-    }),
+
+    // Credentials Provider (Email/Password)
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -20,8 +25,27 @@ export const authOptions: NextAuthOptions = {
         password: { label: "비밀번호", type: "password" }
       },
       async authorize(credentials) {
-        // TODO: 실제 데이터베이스와 연동하여 사용자 인증
-        // 현재는 데모용 하드코딩된 사용자
+        // Trainer Milestone 계정
+        if (credentials?.email === 'trainermilestone@gmail.com' && credentials?.password === 'trainer2024!') {
+          return {
+            id: 'trainermilestone',
+            name: 'Trainer Milestone',
+            email: 'trainermilestone@gmail.com',
+            image: null,
+          }
+        }
+
+        // 관리자 계정
+        if (credentials?.email === 'admin@aitoolsite.com' && credentials?.password === 'admin1234!') {
+          return {
+            id: 'admin',
+            name: '관리자',
+            email: 'admin@aitoolsite.com',
+            image: null,
+          }
+        }
+
+        // 데모 계정
         if (credentials?.email === 'demo@example.com' && credentials?.password === 'demo123') {
           return {
             id: '1',
@@ -31,28 +55,30 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
-        // 인증 실패
         return null
       }
     }),
   ],
+
   pages: {
     signIn: '/login',
   },
+
   callbacks: {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub || ''
+
+        // Assign admin role to specific users
+        if (session.user.email === 'trainermilestone@gmail.com' ||
+            session.user.email === 'admin@aitoolsite.com') {
+          session.user.role = 'admin'
+        }
       }
       return session
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
   },
+
   secret: process.env.NEXTAUTH_SECRET,
 }
 

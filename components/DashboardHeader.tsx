@@ -2,7 +2,7 @@
 
 import { ThemeToggle } from './ThemeToggle'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 interface DashboardHeaderProps {
@@ -12,7 +12,20 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
   const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const baseNavigationItems = [
+    { name: '홈', href: '/' },
+    { name: '캘린더', href: '/calendar' },
+    { name: '메모', href: '/notes' },
+    { name: '회사소개', href: '/about' },
+    { name: '상품', href: '/products' }
+  ]
+
+  const navigationItems = session
+    ? [...baseNavigationItems, { name: '마이페이지', href: '/mypage' }]
+    : baseNavigationItems
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-b border-white/20 dark:border-gray-800/20 shadow-sm">
@@ -32,12 +45,22 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
 
           {/* Navigation - Center */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary font-medium transition-colors">
-              회사소개
-            </a>
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary font-medium transition-colors">
-              상품
-            </a>
+            {navigationItems.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => router.push(item.href)}
+                  className={`font-medium transition-colors ${
+                    isActive
+                      ? 'text-primary dark:text-primary'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              )
+            })}
           </nav>
 
           {/* Actions - Right */}
@@ -79,13 +102,19 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
                         </p>
                       </div>
                       <button
-                        onClick={() => router.push('/profile')}
+                        onClick={() => router.push('/mypage/profile')}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
                       >
-                        내 프로필
+                        내 정보
                       </button>
                       <button
-                        onClick={() => router.push('/settings')}
+                        onClick={() => router.push('/mypage/orders')}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        주문내역
+                      </button>
+                      <button
+                        onClick={() => router.push('/mypage/settings')}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
                       >
                         설정

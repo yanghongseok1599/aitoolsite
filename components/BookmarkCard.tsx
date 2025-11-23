@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { BookmarkContextMenu } from './BookmarkContextMenu'
 
 interface BookmarkCardProps {
+  id: string
   name: string
   url: string
   icon?: string
@@ -12,8 +15,23 @@ interface BookmarkCardProps {
   onDelete?: () => void
 }
 
-export function BookmarkCard({ name, url, icon, onEdit, onDelete }: BookmarkCardProps) {
+export function BookmarkCard({ id, name, url, icon, onEdit, onDelete }: BookmarkCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -56,9 +74,13 @@ export function BookmarkCard({ name, url, icon, onEdit, onDelete }: BookmarkCard
   return (
     <>
       <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
         onContextMenu={handleContextMenu}
         onClick={handleClick}
-        className="group flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+        className="group flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-grab active:cursor-grabbing"
       >
         {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -72,7 +94,7 @@ export function BookmarkCard({ name, url, icon, onEdit, onDelete }: BookmarkCard
         </div>
 
         {/* Name */}
-        <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-2 group-hover:text-primary transition-colors leading-tight">
+        <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-2 group-hover:text-primary transition-colors leading-tight pointer-events-none">
           {name}
         </span>
       </div>

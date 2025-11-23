@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
+import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { BookmarkCard } from './BookmarkCard'
 
@@ -96,33 +96,39 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
 
       {/* Bookmarks Grid */}
       {isExpanded && (
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
-          {bookmarks.map((bookmark) => (
-            <BookmarkCard
-              key={bookmark.id}
-              {...bookmark}
-              onEdit={() => onEditBookmark?.(bookmark.id)}
-              onDelete={() => onDeleteBookmark?.(bookmark.id)}
-            />
-          ))}
+        <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+            {bookmarks.map((bookmark) => (
+              <BookmarkCard
+                key={bookmark.id}
+                id={bookmark.id}
+                name={bookmark.name}
+                url={bookmark.url}
+                icon={bookmark.icon}
+                description={bookmark.description}
+                onEdit={() => onEditBookmark?.(bookmark.id)}
+                onDelete={() => onDeleteBookmark?.(bookmark.id)}
+              />
+            ))}
 
-          {/* Add New Card */}
-          {onAddBookmark && (
-            <button
-              onClick={onAddBookmark}
-              className="flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
-                추가
-              </span>
-            </button>
-          )}
-        </div>
+            {/* Add New Card */}
+            {onAddBookmark && (
+              <button
+                onClick={onAddBookmark}
+                className="flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
+                  추가
+                </span>
+              </button>
+            )}
+          </div>
+        </SortableContext>
       )}
 
       {/* Empty State */}

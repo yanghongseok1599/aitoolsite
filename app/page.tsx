@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { DashboardHeader } from '@/components/DashboardHeader'
@@ -8,6 +9,18 @@ import { CategorySection, Bookmark } from '@/components/CategorySection'
 import { AddToolModal } from '@/components/AddToolModal'
 import { EditCategoryModal } from '@/components/EditCategoryModal'
 import { AddCategoryModal } from '@/components/AddCategoryModal'
+import { CalendarWidget } from '@/components/CalendarWidget'
+import { NotesWidget } from '@/components/NotesWidget'
+import { MonthlyCalendar } from '@/components/MonthlyCalendar'
+import { SortableWidget } from '@/components/SortableWidget'
+import {
+  getUserBookmarks,
+  addBookmark,
+  updateBookmark,
+  deleteBookmark,
+  getUserSettings,
+  saveUserSettings,
+} from '@/lib/firestore'
 
 // 샘플 데이터
 const sampleBookmarks: { [key: string]: Bookmark[] } = {
@@ -199,7 +212,8 @@ const sampleBookmarks: { [key: string]: Bookmark[] } = {
 }
 
 export default function Home() {
-  const [bookmarks, setBookmarks] = useState(sampleBookmarks)
+  const { data: session } = useSession()
+  const [bookmarks, setBookmarks] = useState<{ [key: string]: Bookmark[] }>(sampleBookmarks)
   const [categoryOrder, setCategoryOrder] = useState(Object.keys(sampleBookmarks))
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -207,6 +221,59 @@ export default function Home() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState('')
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
+  const [widgetOrder, setWidgetOrder] = useState(['monthly-calendar', 'notes', 'calendar'])
+  const [loading, setLoading] = useState(true)
+
+  // Load user data from Firebase
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!session?.user?.email) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const userId = session.user.email
+
+        // Load bookmarks
+        const firestoreBookmarks = await getUserBookmarks(userId)
+        const bookmarksByCategory: { [key: string]: Bookmark[] } = {}
+
+        firestoreBookmarks.forEach((bookmark) => {
+          if (!bookmarksByCategory[bookmark.category]) {
+            bookmarksByCategory[bookmark.category] = []
+          }
+          bookmarksByCategory[bookmark.category].push({
+            id: bookmark.id,
+            name: bookmark.name,
+            url: bookmark.url,
+            icon: bookmark.icon,
+            description: bookmark.description,
+          })
+        })
+
+        // Load user settings
+        const settings = await getUserSettings(userId)
+
+        if (Object.keys(bookmarksByCategory).length > 0) {
+          setBookmarks(bookmarksByCategory)
+          setCategoryOrder(
+            settings?.categoryOrder || Object.keys(bookmarksByCategory)
+          )
+        }
+
+        if (settings?.widgetOrder) {
+          setWidgetOrder(settings.widgetOrder)
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUserData()
+  }, [session])
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -215,15 +282,95 @@ export default function Home() {
     })
   )
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      setCategoryOrder((items) => {
-        const oldIndex = items.indexOf(active.id as string)
-        const newIndex = items.indexOf(over.id as string)
-        return arrayMove(items, oldIndex, newIndex)
-      })
+      const activeId = active.id as string
+      const overId = over.id as string
+
+      // Check if dragging widgets
+      if (widgetOrder.includes(activeId) && widgetOrder.includes(overId)) {
+        const newOrder = arrayMove(widgetOrder, widgetOrder.indexOf(activeId), widgetOrder.indexOf(overId))
+        setWidgetOrder(newOrder)
+
+        // Save to Firebase
+        if (session?.user?.email) {
+          await saveUserSettings(session.user.email, { widgetOrder: newOrder })
+        }
+      } else if (categoryOrder.includes(activeId) && categoryOrder.includes(overId)) {
+        // Dragging categories
+        const newOrder = arrayMove(categoryOrder, categoryOrder.indexOf(activeId), categoryOrder.indexOf(overId))
+        setCategoryOrder(newOrder)
+
+        // Save to Firebase
+        if (session?.user?.email) {
+          await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+        }
+      } else {
+        // Dragging bookmarks - find which category the bookmark belongs to
+        let sourceCategory = ''
+        let targetCategory = ''
+
+        // Find the source category
+        for (const [category, items] of Object.entries(bookmarks)) {
+          if (items.some(b => b.id === activeId)) {
+            sourceCategory = category
+          }
+          if (items.some(b => b.id === overId)) {
+            targetCategory = category
+          }
+        }
+
+        if (sourceCategory) {
+          if (targetCategory && sourceCategory !== targetCategory) {
+            // Moving bookmark to a different category
+            const sourceBookmarks = [...bookmarks[sourceCategory]]
+            const targetBookmarks = [...bookmarks[targetCategory]]
+
+            const movedBookmark = sourceBookmarks.find(b => b.id === activeId)
+            if (movedBookmark) {
+              // Remove from source
+              const newSourceBookmarks = sourceBookmarks.filter(b => b.id !== activeId)
+
+              // Add to target at the position of overId
+              const targetIndex = targetBookmarks.findIndex(b => b.id === overId)
+              const newTargetBookmarks = [...targetBookmarks]
+              newTargetBookmarks.splice(targetIndex, 0, movedBookmark)
+
+              // Update state
+              setBookmarks(prev => ({
+                ...prev,
+                [sourceCategory]: newSourceBookmarks,
+                [targetCategory]: newTargetBookmarks
+              }))
+
+              // Update in Firebase
+              if (session?.user?.email) {
+                await updateBookmark(activeId, {
+                  category: targetCategory,
+                  name: movedBookmark.name,
+                  url: movedBookmark.url,
+                  icon: movedBookmark.icon,
+                  userId: session.user.email,
+                })
+              }
+            }
+          } else if (sourceCategory === targetCategory) {
+            // Reordering within the same category
+            const categoryBookmarks = [...bookmarks[sourceCategory]]
+            const oldIndex = categoryBookmarks.findIndex(b => b.id === activeId)
+            const newIndex = categoryBookmarks.findIndex(b => b.id === overId)
+
+            const reorderedBookmarks = arrayMove(categoryBookmarks, oldIndex, newIndex)
+
+            setBookmarks(prev => ({
+              ...prev,
+              [sourceCategory]: reorderedBookmarks
+            }))
+          }
+        }
+      }
     }
   }
 
@@ -231,7 +378,7 @@ export default function Home() {
     setIsAddCategoryModalOpen(true)
   }
 
-  const handleCategoryAdd = (categoryName: string) => {
+  const handleCategoryAdd = async (categoryName: string) => {
     // Check if category already exists
     if (bookmarks[categoryName]) {
       alert('이미 존재하는 카테고리 이름입니다.')
@@ -245,7 +392,13 @@ export default function Home() {
     }))
 
     // Add to category order
-    setCategoryOrder(prev => [...prev, categoryName])
+    const newOrder = [...categoryOrder, categoryName]
+    setCategoryOrder(newOrder)
+
+    // Save to Firebase
+    if (session?.user?.email) {
+      await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+    }
   }
 
   const handleAddBookmark = (category: string) => {
@@ -263,12 +416,17 @@ export default function Home() {
     }
   }
 
-  const handleDeleteBookmark = (category: string, bookmarkId: string) => {
+  const handleDeleteBookmark = async (category: string, bookmarkId: string) => {
     if (confirm('이 도구를 삭제하시겠습니까?')) {
       setBookmarks(prev => ({
         ...prev,
         [category]: prev[category].filter(b => b.id !== bookmarkId)
       }))
+
+      // Delete from Firebase
+      if (session?.user?.email) {
+        await deleteBookmark(bookmarkId)
+      }
     }
   }
 
@@ -278,7 +436,9 @@ export default function Home() {
     setEditingBookmark(null)
   }
 
-  const handleToolAdd = (tool: { name: string; url: string; icon?: string }) => {
+  const handleToolAdd = async (tool: { name: string; url: string; icon?: string }) => {
+    if (!session?.user?.email) return
+
     if (editingBookmark) {
       // Update existing bookmark
       setBookmarks(prev => ({
@@ -289,11 +449,25 @@ export default function Home() {
             : b
         )
       }))
+
+      // Update in Firebase
+      await updateBookmark(editingBookmark.bookmark.id, {
+        name: tool.name,
+        url: tool.url,
+        icon: tool.icon,
+        category: selectedCategory,
+        userId: session.user.email,
+      })
     } else {
-      // Add new bookmark
-      const newId = Date.now().toString()
+      // Add new bookmark to Firebase
+      const docRef = await addBookmark(session.user.email, selectedCategory, {
+        name: tool.name,
+        url: tool.url,
+        icon: tool.icon,
+      })
+
       const newBookmark: Bookmark = {
-        id: newId,
+        id: docRef.id,
         name: tool.name,
         url: tool.url,
         icon: tool.icon
@@ -311,7 +485,7 @@ export default function Home() {
     setIsCategoryModalOpen(true)
   }
 
-  const handleCategoryRename = (newName: string) => {
+  const handleCategoryRename = async (newName: string) => {
     if (newName === editingCategory) return
 
     // Check if new name already exists
@@ -329,9 +503,25 @@ export default function Home() {
     })
 
     // Update category order
-    setCategoryOrder(prev =>
-      prev.map(cat => cat === editingCategory ? newName : cat)
-    )
+    const newOrder = categoryOrder.map(cat => cat === editingCategory ? newName : cat)
+    setCategoryOrder(newOrder)
+
+    // Update all bookmarks in this category in Firebase
+    if (session?.user?.email) {
+      const bookmarksToUpdate = bookmarks[editingCategory] || []
+      for (const bookmark of bookmarksToUpdate) {
+        await updateBookmark(bookmark.id, {
+          category: newName,
+          name: bookmark.name,
+          url: bookmark.url,
+          icon: bookmark.icon,
+          userId: session.user.email,
+        })
+      }
+
+      // Save new category order
+      await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+    }
   }
 
   return (
@@ -366,50 +556,70 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Main Content - 2 Column Layout */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={categoryOrder} strategy={verticalListSortingStrategy}>
-            {categoryOrder.map((category) => (
-              <CategorySection
-                key={category}
-                id={category}
-                title={category}
-                bookmarks={bookmarks[category] || []}
-                onAddBookmark={() => handleAddBookmark(category)}
-                onEditBookmark={(bookmarkId) => handleEditBookmark(category, bookmarkId)}
-                onDeleteBookmark={(bookmarkId) => handleDeleteBookmark(category, bookmarkId)}
-                onEditCategory={() => handleEditCategory(category)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column - AI Tools (Categories) */}
+            <div className="lg:col-span-8">
+              <SortableContext items={categoryOrder} strategy={verticalListSortingStrategy}>
+                {categoryOrder.map((category) => (
+                  <CategorySection
+                    key={category}
+                    id={category}
+                    title={category}
+                    bookmarks={bookmarks[category] || []}
+                    onAddBookmark={() => handleAddBookmark(category)}
+                    onEditBookmark={(bookmarkId) => handleEditBookmark(category, bookmarkId)}
+                    onDeleteBookmark={(bookmarkId) => handleDeleteBookmark(category, bookmarkId)}
+                    onEditCategory={() => handleEditCategory(category)}
+                  />
+                ))}
+              </SortableContext>
 
-        {/* Empty State - if no categories */}
-        {Object.keys(bookmarks).length === 0 && (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
+              {/* Empty State - if no categories */}
+              {Object.keys(bookmarks).length === 0 && (
+                <div className="text-center py-20">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    첫 번째 도구를 추가해보세요
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    자주 사용하는 AI 도구들을 카테고리별로 정리할 수 있습니다
+                  </p>
+                  <button
+                    onClick={handleAddCategory}
+                    className="px-6 py-3 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold transition-colors"
+                  >
+                    카테고리 만들기
+                  </button>
+                </div>
+              )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              첫 번째 도구를 추가해보세요
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              자주 사용하는 AI 도구들을 카테고리별로 정리할 수 있습니다
-            </p>
-            <button
-              onClick={handleAddCategory}
-              className="px-6 py-3 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold transition-colors"
-            >
-              카테고리 만들기
-            </button>
+
+            {/* Right Column - Widgets (Monthly Calendar, Notes & Calendar) */}
+            <div className="lg:col-span-4">
+              <SortableContext items={widgetOrder} strategy={verticalListSortingStrategy}>
+                <div className="space-y-6">
+                  {widgetOrder.map((widgetId) => (
+                    <SortableWidget key={widgetId} id={widgetId}>
+                      {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
+                      {widgetId === 'notes' && <NotesWidget />}
+                      {widgetId === 'calendar' && <CalendarWidget />}
+                    </SortableWidget>
+                  ))}
+                </div>
+              </SortableContext>
+            </div>
           </div>
-        )}
+        </DndContext>
       </main>
 
       {/* Add Tool Modal */}
