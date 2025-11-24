@@ -13,6 +13,8 @@ interface Note {
   isPinned?: boolean
 }
 
+const NOTES_STORAGE_KEY = 'ai-tools-notes'
+
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,62 +24,46 @@ export default function NotesPage() {
   const [editContent, setEditContent] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // 로컬 스토리지에서 메모 불러오기
   useEffect(() => {
-    // TODO: 실제 노트 데이터베이스 연동
-    // 현재는 샘플 데이터 사용
-    const sampleNotes: Note[] = [
-      {
-        id: '1',
-        title: '회의 메모',
-        content: '다음 주 월요일 오전 10시 팀 회의 준비사항:\n- 프로젝트 진행상황 보고서\n- Q1 목표 설정\n- 팀원 역할 분담\n- 예산 검토',
-        createdAt: '2024-01-20T09:30:00',
-        updatedAt: '2024-01-20T09:30:00',
-        color: 'blue',
-        isPinned: true
-      },
-      {
-        id: '2',
-        title: '아이디어',
-        content: 'AI 도구 북마크 플랫폼에 추가하면 좋을 기능들:\n- 태그 기능\n- 공유 기능\n- 북마크 통계\n- 크롬 익스텐션\n- 모바일 앱',
-        createdAt: '2024-01-19T15:20:00',
-        updatedAt: '2024-01-19T15:20:00',
-        color: 'yellow',
-        isPinned: true
-      },
-      {
-        id: '3',
-        title: '할 일',
-        content: '이번 주 내로 완료:\n- 결제 시스템 테스트\n- 관리자 대시보드 최종 검토\n- 사용자 피드백 반영\n- 성능 최적화',
-        createdAt: '2024-01-18T11:00:00',
-        updatedAt: '2024-01-20T08:00:00',
-        color: 'green',
-        isPinned: false
-      },
-      {
-        id: '4',
-        title: '학습 노트',
-        content: 'Next.js 14 주요 기능:\n- Server Components\n- App Router\n- Server Actions\n- Streaming\n- 향상된 이미지 최적화',
-        createdAt: '2024-01-17T14:00:00',
-        updatedAt: '2024-01-17T14:00:00',
-        color: 'purple',
-        isPinned: false
-      },
-      {
-        id: '5',
-        title: '북마크',
-        content: '나중에 읽을 링크:\n- https://nextjs.org/docs\n- https://tailwindcss.com/docs\n- https://react.dev',
-        createdAt: '2024-01-16T10:00:00',
-        updatedAt: '2024-01-16T10:00:00',
-        color: 'red',
-        isPinned: false
+    try {
+      const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY)
+      if (storedNotes) {
+        const parsedNotes = JSON.parse(storedNotes)
+        setNotes(parsedNotes)
+      } else {
+        // 처음 방문시 샘플 데이터 제공
+        const sampleNotes: Note[] = [
+          {
+            id: '1',
+            title: '환영합니다! 👋',
+            content: '이곳에서 메모를 작성하고 관리할 수 있습니다.\n\n메모는 자동으로 브라우저에 저장되므로 언제든지 다시 확인할 수 있습니다.\n\n- 새 메모 작성하기\n- 메모 검색하기\n- 중요한 메모 고정하기\n\n지금 바로 시작해보세요!',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            color: 'blue',
+            isPinned: true
+          }
+        ]
+        setNotes(sampleNotes)
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(sampleNotes))
       }
-    ]
-
-    setTimeout(() => {
-      setNotes(sampleNotes)
+    } catch (error) {
+      console.error('Error loading notes from localStorage:', error)
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }, [])
+
+  // 메모 변경시 로컬 스토리지에 저장
+  useEffect(() => {
+    if (!loading && notes.length > 0) {
+      try {
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes))
+      } catch (error) {
+        console.error('Error saving notes to localStorage:', error)
+      }
+    }
+  }, [notes, loading])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -161,7 +147,9 @@ export default function NotesPage() {
 
   const handleDeleteNote = (noteId: string) => {
     if (confirm('이 메모를 삭제하시겠습니까?')) {
-      setNotes(prev => prev.filter(note => note.id !== noteId))
+      const updatedNotes = notes.filter(note => note.id !== noteId)
+      setNotes(updatedNotes)
+      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(updatedNotes))
       if (selectedNote?.id === noteId) {
         setSelectedNote(null)
       }

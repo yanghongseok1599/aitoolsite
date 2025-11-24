@@ -13,9 +13,10 @@ interface BookmarkCardProps {
   description?: string
   onEdit?: () => void
   onDelete?: () => void
+  isDragOverlay?: boolean
 }
 
-export function BookmarkCard({ id, name, url, icon, onEdit, onDelete }: BookmarkCardProps) {
+export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOverlay = false }: BookmarkCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   const {
@@ -29,9 +30,11 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete }: Bookmark
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 200ms cubic-bezier(0.2, 0, 0, 1)',
     opacity: isDragging ? 0.5 : 1,
-  }
+    zIndex: isDragging ? 1000 : 'auto',
+    willChange: isDragging ? 'transform' : 'auto',
+  } as React.CSSProperties
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -71,6 +74,29 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete }: Bookmark
     return name.trim().charAt(0).toUpperCase() || '?'
   }
 
+  // If it's in DragOverlay, render static version without drag handlers
+  if (isDragOverlay) {
+    return (
+      <div className="flex flex-col items-center space-y-1.5 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
+        {/* Icon */}
+        <div className="w-10 h-10 flex items-center justify-center">
+          {icon ? (
+            <img src={icon} alt={name} className="w-full h-full object-contain rounded-full border border-white dark:border-gray-700" />
+          ) : (
+            <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-sm font-bold border border-white dark:border-gray-700`}>
+              {getInitial(name)}
+            </div>
+          )}
+        </div>
+
+        {/* Name */}
+        <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-2 leading-tight">
+          {name}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <>
       <div
@@ -80,7 +106,7 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete }: Bookmark
         {...listeners}
         onContextMenu={handleContextMenu}
         onClick={handleClick}
-        className="group flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-grab active:cursor-grabbing"
+        className="group flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-grab active:cursor-grabbing transform-gpu"
       >
         {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">

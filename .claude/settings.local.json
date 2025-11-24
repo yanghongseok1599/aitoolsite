@@ -23,7 +23,11 @@
       "Bash(echo:*)",
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(git clone:*)",
-      "Bash(del test-oauth.js)"
+      "Bash(del test-oauth.js)",
+      "Bash(git commit:*)",
+      "Bash(openssl rand:*)",
+      "Bash(cat:*)",
+      "Bash(dir /b)"
     ],
     "deny": [],
     "ask": []

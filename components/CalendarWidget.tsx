@@ -21,25 +21,39 @@ export function CalendarWidget() {
   useEffect(() => {
     const loadEvents = async () => {
       if (!session?.user?.email) {
+        console.log('CalendarWidget - No session, skipping load')
         setLoading(false)
         return
       }
 
       try {
+        console.log('CalendarWidget - Loading events, hasAccessToken:', !!session.accessToken)
+
         // Try to load from Google Calendar first
         if (session.accessToken) {
-          const response = await fetch('/api/calendar/events?type=today')
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.events) {
-              setEvents(data.events)
-              setLoading(false)
-              return
-            }
+          console.log('CalendarWidget - Fetching from Google Calendar API')
+          const response = await fetch('/api/calendar/events?type=upcoming')
+          const data = await response.json()
+
+          console.log('CalendarWidget - API response:', {
+            status: response.status,
+            success: data.success,
+            eventsCount: data.events?.length || 0
+          })
+
+          if (response.ok && data.success) {
+            console.log('CalendarWidget - Using Google Calendar events:', data.events.length)
+            // Show up to 5 upcoming events
+            setEvents(data.events?.slice(0, 5) || [])
+            setLoading(false)
+            return
           }
+        } else {
+          console.log('CalendarWidget - No access token, skipping Google Calendar')
         }
 
         // Fallback to Firestore
+        console.log('CalendarWidget - Falling back to Firestore')
         const firestoreEvents = await getUserEvents(session.user.email)
 
         // Filter today's events
@@ -61,9 +75,10 @@ export function CalendarWidget() {
           description: event.description,
         }))
 
+        console.log('CalendarWidget - Using Firestore events:', formattedEvents.length)
         setEvents(formattedEvents)
       } catch (error) {
-        console.error('Error loading events:', error)
+        console.error('CalendarWidget - Error loading events:', error)
       } finally {
         setLoading(false)
       }
@@ -100,7 +115,7 @@ export function CalendarWidget() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            오늘의 일정
+            다가오는 일정
           </h3>
         </div>
         <Link
@@ -124,11 +139,11 @@ export function CalendarWidget() {
           <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">오늘 일정이 없습니다</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">예정된 일정이 없습니다</p>
         </div>
       ) : (
         <div className="space-y-2">
-          {events.slice(0, 3).map((event) => (
+          {events.slice(0, 5).map((event) => (
             <div
               key={event.id}
               className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
@@ -159,13 +174,13 @@ export function CalendarWidget() {
         </div>
       )}
 
-      {events.length > 3 && (
+      {events.length > 5 && (
         <div className="mt-4 text-center">
           <Link
             href="/calendar"
             className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
-            +{events.length - 3}개 더보기
+            +{events.length - 5}개 더보기
           </Link>
         </div>
       )}

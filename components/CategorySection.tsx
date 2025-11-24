@@ -37,12 +37,14 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 250ms cubic-bezier(0.2, 0, 0, 1)',
     opacity: isDragging ? 0.5 : 1,
-  }
+    zIndex: isDragging ? 1000 : 'auto',
+    willChange: isDragging ? 'transform' : 'auto',
+  } as React.CSSProperties
 
   return (
-    <section ref={setNodeRef} style={style} className="mb-8">
+    <section ref={setNodeRef} style={style} className="mb-8 transform-gpu">
       {/* Category Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2 group flex-1">

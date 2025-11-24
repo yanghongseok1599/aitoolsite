@@ -21,9 +21,11 @@ export function SortableWidget({ id, children }: SortableWidgetProps) {
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
+    transition: transition || 'transform 250ms cubic-bezier(0.2, 0, 0, 1)',
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    willChange: isDragging ? 'transform' : 'auto',
+  } as React.CSSProperties
 
   return (
     <div ref={setNodeRef} style={style} className="relative group">

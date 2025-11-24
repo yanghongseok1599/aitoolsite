@@ -33,9 +33,12 @@ export interface FirestoreBookmark {
 // Get all bookmarks for a user
 export async function getUserBookmarks(userId: string) {
   const bookmarksRef = collection(db, 'bookmarks')
-  const q = query(bookmarksRef, where('userId', '==', userId), orderBy('createdAt', 'desc'))
+  // Remove orderBy to avoid composite index requirement
+  const q = query(bookmarksRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreBookmark[]
+  // Sort on client side instead
+  const bookmarks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreBookmark[]
+  return bookmarks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
 }
 
 // Add a bookmark
@@ -59,11 +62,22 @@ export async function addBookmark(userId: string, category: string, bookmark: {
 
 // Update a bookmark
 export async function updateBookmark(bookmarkId: string, updates: Partial<FirestoreBookmark>) {
-  const bookmarkRef = doc(db, 'bookmarks', bookmarkId)
-  await updateDoc(bookmarkRef, {
-    ...updates,
-    updatedAt: Timestamp.now(),
-  })
+  try {
+    const bookmarkRef = doc(db, 'bookmarks', bookmarkId)
+    const bookmarkDoc = await getDoc(bookmarkRef)
+
+    if (!bookmarkDoc.exists()) {
+      console.warn(`Bookmark ${bookmarkId} does not exist, skipping update`)
+      return
+    }
+
+    await updateDoc(bookmarkRef, {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    })
+  } catch (error) {
+    console.error('Error updating bookmark:', error)
+  }
 }
 
 // Delete a bookmark
@@ -123,9 +137,12 @@ export interface FirestoreNote {
 // Get all notes for a user
 export async function getUserNotes(userId: string) {
   const notesRef = collection(db, 'notes')
-  const q = query(notesRef, where('userId', '==', userId), orderBy('updatedAt', 'desc'))
+  // Remove orderBy to avoid composite index requirement
+  const q = query(notesRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreNote[]
+  // Sort on client side instead
+  const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreNote[]
+  return notes.sort((a, b) => b.updatedAt.toMillis() - a.updatedAt.toMillis())
 }
 
 // Add a note
@@ -180,9 +197,12 @@ export interface FirestoreEvent {
 // Get all events for a user
 export async function getUserEvents(userId: string) {
   const eventsRef = collection(db, 'events')
-  const q = query(eventsRef, where('userId', '==', userId), orderBy('start', 'asc'))
+  // Remove orderBy to avoid composite index requirement
+  const q = query(eventsRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreEvent[]
+  // Sort on client side instead
+  const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreEvent[]
+  return events.sort((a, b) => a.start.toMillis() - b.start.toMillis())
 }
 
 // Add an event

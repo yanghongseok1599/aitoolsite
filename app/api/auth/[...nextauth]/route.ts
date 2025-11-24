@@ -2,17 +2,25 @@ import NextAuth, { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
+const googleClientId = process.env.GOOGLE_CLIENT_ID
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+
+if (!googleClientId || !googleClientSecret) {
+  console.error('Missing Google OAuth credentials')
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     // Google OAuth Provider
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      clientId: googleClientId || '',
+      clientSecret: googleClientSecret || '',
       authorization: {
         params: {
           prompt: "select_account",
           access_type: "offline",
-          response_type: "code"
+          response_type: "code",
+          scope: "openid email profile https://www.googleapis.com/auth/calendar"
         }
       }
     }),
@@ -65,6 +73,14 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
+    async jwt({ token, account }) {
+      // 로그인 시 액세스 토큰 저장
+      if (account) {
+        token.accessToken = account.access_token
+        token.refreshToken = account.refresh_token
+      }
+      return token
+    },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub || ''
@@ -75,6 +91,9 @@ export const authOptions: NextAuthOptions = {
           session.user.role = 'admin'
         }
       }
+      // 세션에 액세스 토큰 추가
+      session.accessToken = token.accessToken as string
+      session.refreshToken = token.refreshToken as string
       return session
     },
   },

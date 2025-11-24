@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, defaultDropAnimationSideEffects, DragStartEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import type { DropAnimation } from '@dnd-kit/core'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { CategorySection, Bookmark } from '@/components/CategorySection'
 import { AddToolModal } from '@/components/AddToolModal'
@@ -13,6 +14,7 @@ import { CalendarWidget } from '@/components/CalendarWidget'
 import { NotesWidget } from '@/components/NotesWidget'
 import { MonthlyCalendar } from '@/components/MonthlyCalendar'
 import { SortableWidget } from '@/components/SortableWidget'
+import { BookmarkCard } from '@/components/BookmarkCard'
 import {
   getUserBookmarks,
   addBookmark,
@@ -223,6 +225,7 @@ export default function Home() {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [widgetOrder, setWidgetOrder] = useState(['monthly-calendar', 'notes', 'calendar'])
   const [loading, setLoading] = useState(true)
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   // Load user data from Firebase
   useEffect(() => {
@@ -276,14 +279,52 @@ export default function Home() {
   }, [session])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 5px로 줄여서 더 반응성 좋게
+        tolerance: 5,
+        delay: 0,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
 
+  const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.5',
+        },
+      },
+    }),
+    duration: 200,
+    easing: 'cubic-bezier(0.2, 0, 0, 1)',
+  }
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragCancel = () => {
+    setActiveId(null)
+  }
+
+  // Get the currently dragged bookmark
+  const getActiveBookmark = () => {
+    if (!activeId) return null
+
+    for (const [category, items] of Object.entries(bookmarks)) {
+      const bookmark = items.find(b => b.id === activeId)
+      if (bookmark) return bookmark
+    }
+    return null
+  }
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
+    setActiveId(null)
 
     if (over && active.id !== over.id) {
       const activeId = active.id as string
@@ -560,7 +601,9 @@ export default function Home() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Column - AI Tools (Categories) */}
@@ -619,6 +662,24 @@ export default function Home() {
               </SortableContext>
             </div>
           </div>
+
+          {/* DragOverlay for smooth dragging visuals */}
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeId ? (
+              getActiveBookmark() ? (
+                <div className="cursor-grabbing transform rotate-3 scale-110">
+                  <BookmarkCard
+                    id={activeId}
+                    name={getActiveBookmark()!.name}
+                    url={getActiveBookmark()!.url}
+                    icon={getActiveBookmark()?.icon}
+                    description={getActiveBookmark()?.description}
+                    isDragOverlay={true}
+                  />
+                </div>
+              ) : null
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </main>
 

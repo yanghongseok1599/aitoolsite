@@ -6,6 +6,11 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 export async function getGoogleCalendarClient() {
   const session = await getServerSession(authOptions)
 
+  console.log('getGoogleCalendarClient - Session check:', {
+    hasSession: !!session,
+    hasAccessToken: !!session?.accessToken
+  })
+
   if (!session?.accessToken) {
     throw new Error('No access token available')
   }
@@ -20,26 +25,83 @@ export async function getGoogleCalendarClient() {
     access_token: session.accessToken as string,
   })
 
+  console.log('getGoogleCalendarClient - OAuth2 client created successfully')
+
   return google.calendar({ version: 'v3', auth: oauth2Client })
 }
 
-// Get calendar events
+// Get calendar events from all calendars (including shared ones)
 export async function getCalendarEvents(timeMin?: Date, timeMax?: Date) {
   try {
-    const calendar = await getGoogleCalendarClient()
+    // 전체 일정을 가져오기 위해 과거 6개월부터 미래 6개월까지 설정
+    const defaultTimeMin = new Date()
+    defaultTimeMin.setMonth(defaultTimeMin.getMonth() - 6)
 
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin: timeMin ? timeMin.toISOString() : new Date().toISOString(),
-      timeMax: timeMax?.toISOString(),
-      maxResults: 50,
-      singleEvents: true,
-      orderBy: 'startTime',
+    const defaultTimeMax = new Date()
+    defaultTimeMax.setMonth(defaultTimeMax.getMonth() + 6)
+
+    const startTime = timeMin ? timeMin.toISOString() : defaultTimeMin.toISOString()
+    const endTime = timeMax ? timeMax.toISOString() : defaultTimeMax.toISOString()
+
+    console.log('getCalendarEvents - Fetching with params:', {
+      timeMin: startTime,
+      timeMax: endTime
     })
 
-    return response.data.items || []
-  } catch (error) {
+    const calendar = await getGoogleCalendarClient()
+
+    // Get all calendars
+    const calendarListResponse = await calendar.calendarList.list()
+    const calendars = calendarListResponse.data.items || []
+
+    console.log('getCalendarEvents - Found calendars:', calendars.length)
+    calendars.forEach(cal => {
+      console.log('Calendar:', { id: cal.id, summary: cal.summary, description: cal.description })
+    })
+
+    // Fetch events from all calendars
+    const allEvents: any[] = []
+
+    for (const cal of calendars) {
+      if (!cal.id) continue
+
+      try {
+        const response = await calendar.events.list({
+          calendarId: cal.id,
+          timeMin: startTime,
+          timeMax: endTime,
+          maxResults: 250,
+          singleEvents: true,
+          orderBy: 'startTime',
+        })
+
+        if (response.data.items) {
+          console.log(`getCalendarEvents - Calendar "${cal.summary}": ${response.data.items.length} events`)
+          allEvents.push(...response.data.items)
+        }
+      } catch (error: any) {
+        console.error(`Error fetching events from calendar ${cal.summary}:`, error.message)
+        // Continue with other calendars even if one fails
+      }
+    }
+
+    // Sort all events by start time
+    allEvents.sort((a, b) => {
+      const aTime = new Date(a.start?.dateTime || a.start?.date || 0).getTime()
+      const bTime = new Date(b.start?.dateTime || b.start?.date || 0).getTime()
+      return aTime - bTime
+    })
+
+    console.log('getCalendarEvents - Total events from all calendars:', allEvents.length)
+
+    return allEvents
+  } catch (error: any) {
     console.error('Error fetching calendar events:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status
+    })
     return []
   }
 }
@@ -64,6 +126,17 @@ export async function getWeekEvents() {
   nextWeek.setDate(nextWeek.getDate() + 7)
 
   return getCalendarEvents(today, nextWeek)
+}
+
+// Get upcoming events (next 30 days)
+export async function getUpcomingEvents() {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const future = new Date(today)
+  future.setDate(future.getDate() + 30)
+
+  return getCalendarEvents(today, future)
 }
 
 // Create a calendar event

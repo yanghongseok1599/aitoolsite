@@ -13,7 +13,17 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleGoogleLogin = async () => {
-    await signIn('google', { callbackUrl: '/' })
+    console.log('Google login button clicked!')
+    setIsLoading(true)
+    try {
+      const result = await signIn('google', { callbackUrl: '/' })
+      console.log('Google signIn result:', result)
+    } catch (error) {
+      console.error('Google signIn error:', error)
+      setError('Google 로그인 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCredentialsLogin = async (e: React.FormEvent) => {
