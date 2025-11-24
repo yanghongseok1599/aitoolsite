@@ -94,6 +94,9 @@ export interface UserSettings {
   userId: string
   categoryOrder: string[]
   widgetOrder: string[]
+  bannerWidgets?: string[]
+  welcomeTitle?: string
+  welcomeDescription?: string
   theme?: 'light' | 'dark' | 'system'
   updatedAt: Timestamp
 }

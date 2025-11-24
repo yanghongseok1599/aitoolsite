@@ -27,7 +27,9 @@
       "Bash(git commit:*)",
       "Bash(openssl rand:*)",
       "Bash(cat:*)",
-      "Bash(dir /b)"
+      "Bash(dir /b)",
+      "Bash(dir:*)",
+      "Bash(npm i:*)"
     ],
     "deny": [],
     "ask": []

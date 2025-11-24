@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface BookmarkContextMenuProps {
   isOpen: boolean
@@ -20,6 +20,40 @@ export function BookmarkContextMenu({
   onAddSubscription
 }: BookmarkContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
+  const [adjustedPosition, setAdjustedPosition] = useState(position)
+
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return
+
+    const menu = menuRef.current
+    const menuRect = menu.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    let { x, y } = position
+
+    // Adjust horizontal position if menu goes off screen
+    if (x + menuRect.width > viewportWidth) {
+      x = viewportWidth - menuRect.width - 10 // 10px margin from edge
+    }
+
+    // Adjust vertical position if menu goes off screen
+    if (y + menuRect.height > viewportHeight) {
+      y = viewportHeight - menuRect.height - 10 // 10px margin from edge
+    }
+
+    // Make sure menu doesn't go off left edge
+    if (x < 10) {
+      x = 10
+    }
+
+    // Make sure menu doesn't go off top edge
+    if (y < 10) {
+      y = 10
+    }
+
+    setAdjustedPosition({ x, y })
+  }, [isOpen, position])
 
   useEffect(() => {
     if (!isOpen) return
@@ -52,9 +86,9 @@ export function BookmarkContextMenu({
       ref={menuRef}
       style={{
         position: 'fixed',
-        top: `${position.y}px`,
-        left: `${position.x}px`,
-        zIndex: 1000
+        top: `${adjustedPosition.y}px`,
+        left: `${adjustedPosition.x}px`,
+        zIndex: 2147483647
       }}
       className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
     >

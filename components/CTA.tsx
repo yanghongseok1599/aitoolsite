@@ -15,29 +15,29 @@ export function CTA() {
           {/* Badge */}
           <div className="inline-flex items-center px-4 py-2 mb-6 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
             <span className="text-sm font-medium text-white">
-              ✨ 수천 명의 생산적인 사용자들과 함께하세요
+              🎨 일잘러를 위한 나만의 작업실
             </span>
           </div>
 
           {/* Heading */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            디지털 작업 공간을
-            <span className="block">정리할 준비가 되셨나요?</span>
+            생산성을 높일
+            <span className="block">준비가 되셨나요?</span>
           </h2>
 
           {/* Description */}
           <p className="text-lg sm:text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-            수십 개의 브라우저 북마크를 관리하느라 시간 낭비하지 마세요. 전문가처럼 AI 도구를 관리하세요—완전 무료입니다.
+            AI 도구 관리부터 일정, 메모, 작업 시간 추적까지. 마이 AI 스튜디오로 당신만의 최적화된 작업 환경을 만들어보세요.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white hover:bg-gray-100 text-primary font-semibold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5">
+            <a href="/signup" className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white hover:bg-gray-100 text-primary font-semibold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5 text-center">
               무료로 시작하기
-            </button>
-            <button className="w-full sm:w-auto px-8 py-4 rounded-lg bg-transparent hover:bg-white/10 text-white font-semibold text-lg border-2 border-white/50 backdrop-blur-sm transition-all">
-              데모 예약하기
-            </button>
+            </a>
+            <a href="/" className="w-full sm:w-auto px-8 py-4 rounded-lg bg-transparent hover:bg-white/10 text-white font-semibold text-lg border-2 border-white/50 backdrop-blur-sm transition-all text-center">
+              대시보드 둘러보기
+            </a>
           </div>
 
           {/* Trust Indicators */}

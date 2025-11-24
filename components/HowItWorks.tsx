@@ -3,8 +3,8 @@
 const steps = [
   {
     number: '01',
-    title: '계정 생성',
-    description: 'Google이나 GitHub으로 몇 초 만에 가입하세요. 신용카드는 필요 없습니다.',
+    title: 'Google 계정으로 로그인',
+    description: 'Google OAuth로 간편하게 로그인하세요. 구글 캘린더 연동을 위해 권한을 허용해주세요.',
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -13,8 +13,8 @@ const steps = [
   },
   {
     number: '02',
-    title: '도구 추가',
-    description: 'URL만 붙여넣으면 아이콘과 상세정보를 자동으로 가져옵니다. 직접 업로드도 가능합니다.',
+    title: 'AI 도구 추가',
+    description: '자주 사용하는 AI 도구의 URL과 이름을 입력하세요. 카테고리를 만들어 체계적으로 정리할 수 있습니다.',
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -23,21 +23,21 @@ const steps = [
   },
   {
     number: '03',
-    title: '정리 & 분류',
-    description: '카테고리별로 도구를 그룹화하고, 드래그로 순서를 변경하며, 필요 없는 섹션은 접으세요.',
+    title: '드래그로 쉽게 정리',
+    description: '북마크와 카테고리를 드래그 앤 드롭으로 자유롭게 배치하세요. 위젯 순서도 변경 가능합니다.',
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
       </svg>
     )
   },
   {
     number: '04',
-    title: '어디서나 접근',
-    description: '모든 기기에서 도구가 동기화됩니다. 어떤 브라우저에서도 클릭 한 번으로 접근하세요.',
+    title: '일정과 메모 관리',
+    description: '구글 캘린더로 일정을 확인하고, 메모 기능으로 중요한 내용을 기록하세요. 모든 데이터는 클라우드에 자동 저장됩니다.',
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
     )
   }

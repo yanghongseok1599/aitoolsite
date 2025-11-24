@@ -15,34 +15,40 @@ export function Hero() {
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center px-4 py-2 mb-8 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20">
-            <span className="text-sm font-medium text-primary dark:text-blue-400">
-              🚀 나만의 AI 도구 라이브러리
+          <div className="inline-flex items-center px-6 py-3 mb-8 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20">
+            <span className="text-base sm:text-lg font-semibold text-primary dark:text-blue-400">
+              🎨 일잘러를 위한 나만의 작업실
             </span>
           </div>
 
           {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-            AI 도구를 한곳에서
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-relaxed">
+            마이 AI 스튜디오
             <span className="block bg-gradient-to-r from-primary via-blue-600 to-purple-600 bg-clip-text text-transparent">
-              스마트하게 관리하세요
+              나에게 맞춘 스마트 작업 공간
             </span>
           </h1>
 
           {/* Subheading */}
           <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-3xl mx-auto">
-            자주 사용하는 AI 도구들을 카테고리별로 정리하고, 언제 어디서나 빠르게 접근하세요.
-            검색하는 시간을 줄이고, 창작에 집중하세요.
+            AI 도구 관리, 일정, 메모, 작업 시간 추적까지. 생산성을 높이는 모든 기능을 하나의 공간에서.
+            당신만의 최적화된 작업 환경을 만들어보세요.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <button className="w-full sm:w-auto px-8 py-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+            <a
+              href="/signup"
+              className="w-full sm:w-auto px-8 py-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-center"
+            >
               무료로 시작하기
-            </button>
-            <button className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-lg border border-gray-200 dark:border-gray-700 transition-all">
-              데모 영상 보기
-            </button>
+            </a>
+            <a
+              href="/"
+              className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-lg border border-gray-200 dark:border-gray-700 transition-all text-center"
+            >
+              대시보드 둘러보기
+            </a>
           </div>
 
           {/* Social Proof */}

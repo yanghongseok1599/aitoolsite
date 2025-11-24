@@ -17,35 +17,96 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
 
   const baseNavigationItems = [
     { name: '홈', href: '/' },
-    { name: '캘린더', href: '/calendar' },
-    { name: '메모', href: '/notes' },
-    { name: '업그레이드', href: '/products' }
+    { name: '회사소개', href: '/landing' },
+    {
+      name: '기능',
+      href: '#',
+      submenu: [
+        { name: '스마트 캘린더', href: '/calendar', icon: '📅' },
+        { name: '메모 & 노트', href: '/notes', icon: '📝' },
+        { name: 'AI 사용 통계', href: '/analytics', icon: '📊' },
+        { name: 'AI 구독 관리', href: '/subscription', icon: '💳' },
+        { name: '목표 & 달성률', href: '/goals', icon: '🎯' },
+        { name: 'AI 도구 추천', href: '/recommendations', icon: '✨' },
+        { name: '학습 리소스', href: '/learning', icon: '📚' },
+        { name: '템플릿 모음', href: '/templates', icon: '📋' },
+      ]
+    },
+    { name: '요금제', href: '/products' }
   ]
 
   const navigationItems = session
     ? [...baseNavigationItems, { name: '마이페이지', href: '/mypage' }]
     : baseNavigationItems
 
+  const [showSubmenu, setShowSubmenu] = useState<string | null>(null)
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-white/20 dark:border-gray-800/20 shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <a href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              AI 도구 허브
+              마이 AI 스튜디오
             </span>
-          </div>
+          </a>
 
           {/* Navigation - Center */}
           <nav className="hidden md:flex items-center space-x-8">
             {navigationItems.map((item) => {
               const isActive = pathname === item.href
+              const hasSubmenu = 'submenu' in item && item.submenu
+
+              if (hasSubmenu) {
+                return (
+                  <div
+                    key={item.name}
+                    className="relative group/submenu"
+                    onMouseEnter={() => setShowSubmenu(item.name)}
+                    onMouseLeave={() => setShowSubmenu(null)}
+                  >
+                    <button
+                      className="font-medium transition-colors text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary flex items-center gap-1"
+                    >
+                      {item.name}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Submenu Dropdown */}
+                    {showSubmenu === item.name && (
+                      <>
+                        {/* Invisible bridge to prevent menu from closing */}
+                        <div className="absolute top-full left-0 w-56 h-2" />
+
+                        <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                          {item.submenu.map((subItem: any) => (
+                            <button
+                              key={subItem.name}
+                              onClick={() => {
+                                router.push(subItem.href)
+                                setShowSubmenu(null)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+                            >
+                              <span className="text-lg">{subItem.icon}</span>
+                              <span>{subItem.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              }
+
               return (
                 <button
                   key={item.name}

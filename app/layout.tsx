@@ -6,10 +6,79 @@ import { SessionProvider } from '@/components/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
+const siteUrl = "https://animated-alpaca-b09201.netlify.app"
+
 export const metadata: Metadata = {
-  title: 'AI 도구 허브 - 스마트한 AI 도구 관리',
-  description: '자주 사용하는 AI 도구들을 카테고리별로 정리하고 언제 어디서나 빠르게 접근하세요. 영구 무료.',
-  keywords: 'AI 도구, 북마크 관리, 생산성, 정리, AI 에이전트, 도구 관리',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "마이 AI 스튜디오 | 나에게 맞춘 스마트 작업 공간",
+    template: "%s | 마이 AI 스튜디오",
+  },
+  description:
+    "AI 도구 관리, 일정, 메모, 작업 시간 추적까지. 생산성을 높이는 모든 기능을 하나의 공간에서. 당신만의 최적화된 작업 환경을 만들어보세요.",
+  alternates: {
+    canonical: siteUrl,
+    languages: { ko: `${siteUrl}/` },
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      maxSnippet: -1,
+      maxImagePreview: "large",
+      maxVideoPreview: -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    title: "마이 AI 스튜디오 - 나에게 맞춘 스마트 작업 공간",
+    description:
+      "AI 도구 관리, 일정, 메모, 작업 시간 추적까지. 생산성을 높이는 모든 기능을 하나의 공간에서. 당신만의 최적화된 작업 환경을 만들어보세요.",
+    siteName: "마이 AI 스튜디오",
+    images: [
+      {
+        url: `${siteUrl}/open.png`,
+        width: 1200,
+        height: 630,
+        alt: "마이 AI 스튜디오 - 나에게 맞춘 스마트 작업 공간",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "마이 AI 스튜디오 - 나에게 맞춘 스마트 작업 공간",
+    description: "AI 도구 관리, 일정, 메모, 작업 시간 추적까지. 생산성을 높이는 모든 기능을 하나의 공간에서.",
+    images: [`${siteUrl}/open.png`],
+  },
+  keywords: [
+    "AI 도구",
+    "북마크 관리",
+    "AI 에이전트",
+    "ChatGPT",
+    "Claude",
+    "Midjourney",
+    "생산성 도구",
+    "AI 도구 모음",
+    "구글 캘린더 연동",
+    "메모 앱",
+    "도구 정리",
+    "AI 허브"
+  ],
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  category: "technology",
+  verification: {
+    // google: "구글 서치 콘솔 인증 코드",
+  },
 }
 
 export default function RootLayout({
