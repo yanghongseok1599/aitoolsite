@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface ProductAdmin {
   id: string
@@ -15,6 +16,7 @@ interface ProductAdmin {
 }
 
 export default function ProductsManagementPage() {
+  const { alert: showAlert, confirm: showConfirm, success: showSuccess } = useAlert()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -79,14 +81,15 @@ export default function ProductsManagementPage() {
     setShowEditModal(true)
   }
 
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm('정말로 이 상품을 삭제하시겠습니까?')) {
-      alert(`상품 ${productId}를 삭제합니다.`)
+  const handleDeleteProduct = async (productId: string) => {
+    const confirmed = await showConfirm('정말로 이 상품을 삭제하시겠습니까?')
+    if (confirmed) {
+      showSuccess(`상품 ${productId}를 삭제합니다.`)
     }
   }
 
   const handleToggleVisibility = (productId: string, isVisible: boolean) => {
-    alert(`상품 ${productId}의 노출 상태를 ${isVisible ? '숨김' : '노출'}로 변경합니다.`)
+    showSuccess(`상품 ${productId}의 노출 상태를 ${isVisible ? '숨김' : '노출'}로 변경합니다.`)
   }
 
   return (
@@ -324,7 +327,7 @@ export default function ProductsManagementPage() {
                 </button>
                 <button
                   onClick={() => {
-                    alert('상품이 추가되었습니다.')
+                    showSuccess('상품이 추가되었습니다.')
                     setShowAddModal(false)
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

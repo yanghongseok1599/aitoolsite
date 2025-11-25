@@ -43,7 +43,7 @@ export default function AboutPage() {
   ]
 
   const timeline = [
-    { year: '2019', event: 'AI 도구 허브 설립' },
+    { year: '2019', event: '마이 AI 스튜디오 설립' },
     { year: '2020', event: '사용자 1만명 돌파' },
     { year: '2021', event: '모바일 앱 출시' },
     { year: '2022', event: '기업용 서비스 런칭' },
@@ -73,7 +73,7 @@ export default function AboutPage() {
               전문적인 AI 도구 관리 솔루션
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              AI 도구 허브는 2019년 설립 이후 개인과 기업에게 최적화된 AI 도구 관리 플랫폼을 제공하고 있습니다.
+              마이 AI 스튜디오는 2019년 설립 이후 개인과 기업에게 최적화된 AI 도구 관리 플랫폼을 제공하고 있습니다.
               50+ 전문가로 구성된 팀이 지속적으로 서비스를 개선하고 있으며, 현재 10만+ 사용자가 활용하고 있습니다.
             </p>
             <div className="grid grid-cols-3 gap-6">

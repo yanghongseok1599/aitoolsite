@@ -1,35 +1,193 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
+import { db } from '@/lib/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { getAdBannerSettings, saveAdBannerSettings, AdBannerSettings } from '@/lib/firestore'
 
-export default function SettingsPage() {
-  const [siteName, setSiteName] = useState('AI Tools 북마크')
-  const [contactEmail, setContactEmail] = useState('contact@aitools.com')
-  const [contactPhone, setContactPhone] = useState('1588-0000')
+interface SiteSettings {
+  siteName: string
+  contactEmail: string
+  contactPhone: string
+  logoUrl: string
+  paymentMethods: {
+    card: boolean
+    bank: boolean
+    kakao: boolean
+    toss: boolean
+  }
+  adminNotifications: {
+    newOrder: boolean
+    newUser: boolean
+    inquiry: boolean
+  }
+}
 
-  const [paymentMethods, setPaymentMethods] = useState({
+const defaultSettings: SiteSettings = {
+  siteName: 'AI Tools 북마크',
+  contactEmail: 'contact@aitools.com',
+  contactPhone: '1588-0000',
+  logoUrl: '',
+  paymentMethods: {
     card: true,
     bank: true,
     kakao: false,
     toss: true
-  })
-
-  const [adminNotifications, setAdminNotifications] = useState({
+  },
+  adminNotifications: {
     newOrder: true,
     newUser: true,
     inquiry: true
-  })
+  }
+}
+
+export default function SettingsPage() {
+  const { success: showSuccess, error: showError, confirm: showConfirm } = useAlert()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const [settings, setSettings] = useState<SiteSettings>(defaultSettings)
+  const [adBannerEnabled, setAdBannerEnabled] = useState(false)
+  const [isSavingAdBanner, setIsSavingAdBanner] = useState(false)
+
+  // Load settings from Firebase
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const docRef = doc(db, 'admin', 'settings')
+        const docSnap = await getDoc(docRef)
+
+        if (docSnap.exists()) {
+          const data = docSnap.data() as SiteSettings
+          setSettings({ ...defaultSettings, ...data })
+        }
+
+        // Load ad banner settings
+        const adSettings = await getAdBannerSettings()
+        if (adSettings) {
+          setAdBannerEnabled(adSettings.enabled ?? false)
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
+
+  // Save settings to Firebase
+  const saveSettings = async (newSettings: Partial<SiteSettings>, message: string) => {
+    setIsSaving(true)
+    try {
+      const docRef = doc(db, 'admin', 'settings')
+      await setDoc(docRef, { ...settings, ...newSettings }, { merge: true })
+      setSettings(prev => ({ ...prev, ...newSettings }))
+      showSuccess(message)
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      showError('설정 저장에 실패했습니다.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const handleSaveSiteSettings = () => {
-    alert('사이트 설정이 저장되었습니다.')
+    saveSettings({
+      siteName: settings.siteName,
+      contactEmail: settings.contactEmail,
+      contactPhone: settings.contactPhone,
+      logoUrl: settings.logoUrl
+    }, '사이트 설정이 저장되었습니다.')
   }
 
   const handleSavePaymentSettings = () => {
-    alert('결제 설정이 저장되었습니다.')
+    saveSettings({
+      paymentMethods: settings.paymentMethods
+    }, '결제 설정이 저장되었습니다.')
   }
 
   const handleSaveNotificationSettings = () => {
-    alert('알림 설정이 저장되었습니다.')
+    saveSettings({
+      adminNotifications: settings.adminNotifications
+    }, '알림 설정이 저장되었습니다.')
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      showError('이미지 크기는 2MB 이하여야 합니다.')
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showError('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
+    // Convert to base64
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = reader.result as string
+      setSettings(prev => ({ ...prev, logoUrl: base64 }))
+      showSuccess('이미지가 업로드되었습니다. 저장 버튼을 눌러 적용하세요.')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleResetDatabase = async () => {
+    const confirmed = await showConfirm('정말로 데이터베이스를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')
+    if (confirmed) {
+      showSuccess('데이터베이스 초기화 기능은 보안상 직접 Firebase 콘솔에서 수행해주세요.')
+    }
+  }
+
+  const handleClearCache = async () => {
+    const confirmed = await showConfirm('모든 캐시를 삭제하시겠습니까?')
+    if (confirmed) {
+      // Clear localStorage cache
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('cache_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      showSuccess('캐시가 삭제되었습니다.')
+    }
+  }
+
+  const handleToggleAdBanner = async (enabled: boolean) => {
+    setIsSavingAdBanner(true)
+    try {
+      await saveAdBannerSettings({ enabled })
+      setAdBannerEnabled(enabled)
+      showSuccess(enabled ? '광고 배너가 활성화되었습니다.' : '광고 배너가 비활성화되었습니다.')
+    } catch (error) {
+      console.error('Failed to save ad banner settings:', error)
+      showError('광고 배너 설정 저장에 실패했습니다.')
+    } finally {
+      setIsSavingAdBanner(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">설정을 불러오는 중...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -51,8 +209,8 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">사이트명</label>
             <input
               type="text"
-              value={siteName}
-              onChange={(e) => setSiteName(e.target.value)}
+              value={settings.siteName}
+              onChange={(e) => setSettings(prev => ({ ...prev, siteName: e.target.value }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -61,8 +219,8 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">연락처 이메일</label>
               <input
                 type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
+                value={settings.contactEmail}
+                onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -70,8 +228,8 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">연락처 전화</label>
               <input
                 type="tel"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
+                value={settings.contactPhone}
+                onChange={(e) => setSettings(prev => ({ ...prev, contactPhone: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -79,24 +237,79 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">로고 이미지</label>
             <div className="flex items-center gap-4">
-              <div className="w-24 h-24 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
-                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+              <div className="w-24 h-24 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                )}
               </div>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                이미지 업로드
-              </button>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                >
+                  이미지 업로드
+                </button>
+                {settings.logoUrl && (
+                  <button
+                    onClick={() => setSettings(prev => ({ ...prev, logoUrl: '' }))}
+                    className="px-4 py-2 text-red-600 text-sm hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    이미지 삭제
+                  </button>
+                )}
+              </div>
             </div>
+            <p className="mt-2 text-xs text-gray-500">권장 크기: 200x200px, 최대 2MB</p>
           </div>
           <div className="pt-4">
             <button
               onClick={handleSaveSiteSettings}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              저장
+              {isSaving ? '저장 중...' : '저장'}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Ad Banner Settings */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">광고 배너 설정</h2>
+          <p className="text-sm text-gray-600 mt-1">MY STUDIO 페이지의 광고 배너 표시 여부를 설정합니다</p>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div>
+              <p className="font-medium text-gray-900">광고 배너 표시</p>
+              <p className="text-sm text-gray-600">활성화하면 MY STUDIO 페이지 좌우에 광고 배너가 표시됩니다</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={adBannerEnabled}
+                onChange={(e) => handleToggleAdBanner(e.target.checked)}
+                disabled={isSavingAdBanner}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50"></div>
+            </label>
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            광고 배너 이미지 및 링크 설정은 MY STUDIO 페이지에서 관리자로 로그인 후 직접 수정할 수 있습니다.
+          </p>
         </div>
       </div>
 
@@ -116,8 +329,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={paymentMethods.card}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, card: e.target.checked })}
+                  checked={settings.paymentMethods.card}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    paymentMethods: { ...prev.paymentMethods, card: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -131,8 +347,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={paymentMethods.bank}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, bank: e.target.checked })}
+                  checked={settings.paymentMethods.bank}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    paymentMethods: { ...prev.paymentMethods, bank: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -146,8 +365,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={paymentMethods.kakao}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, kakao: e.target.checked })}
+                  checked={settings.paymentMethods.kakao}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    paymentMethods: { ...prev.paymentMethods, kakao: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -161,8 +383,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={paymentMethods.toss}
-                  onChange={(e) => setPaymentMethods({ ...paymentMethods, toss: e.target.checked })}
+                  checked={settings.paymentMethods.toss}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    paymentMethods: { ...prev.paymentMethods, toss: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -172,9 +397,10 @@ export default function SettingsPage() {
           <div className="pt-4">
             <button
               onClick={handleSavePaymentSettings}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              저장
+              {isSaving ? '저장 중...' : '저장'}
             </button>
           </div>
         </div>
@@ -196,8 +422,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={adminNotifications.newOrder}
-                  onChange={(e) => setAdminNotifications({ ...adminNotifications, newOrder: e.target.checked })}
+                  checked={settings.adminNotifications.newOrder}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    adminNotifications: { ...prev.adminNotifications, newOrder: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -211,8 +440,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={adminNotifications.newUser}
-                  onChange={(e) => setAdminNotifications({ ...adminNotifications, newUser: e.target.checked })}
+                  checked={settings.adminNotifications.newUser}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    adminNotifications: { ...prev.adminNotifications, newUser: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -226,8 +458,11 @@ export default function SettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={adminNotifications.inquiry}
-                  onChange={(e) => setAdminNotifications({ ...adminNotifications, inquiry: e.target.checked })}
+                  checked={settings.adminNotifications.inquiry}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    adminNotifications: { ...prev.adminNotifications, inquiry: e.target.checked }
+                  }))}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -237,9 +472,10 @@ export default function SettingsPage() {
           <div className="pt-4">
             <button
               onClick={handleSaveNotificationSettings}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              저장
+              {isSaving ? '저장 중...' : '저장'}
             </button>
           </div>
         </div>
@@ -264,7 +500,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">최근 백업</span>
-                <span className="text-sm text-gray-600">2024-01-20 02:00</span>
+                <span className="text-sm text-gray-600">{new Date().toLocaleDateString('ko-KR')}</span>
               </div>
             </div>
             <div className="space-y-3">
@@ -297,7 +533,10 @@ export default function SettingsPage() {
               <p className="font-medium text-gray-900">데이터베이스 초기화</p>
               <p className="text-sm text-gray-600">모든 데이터가 삭제됩니다</p>
             </div>
-            <button className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50">
+            <button
+              onClick={handleResetDatabase}
+              className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+            >
               초기화
             </button>
           </div>
@@ -306,7 +545,10 @@ export default function SettingsPage() {
               <p className="font-medium text-gray-900">캐시 삭제</p>
               <p className="text-sm text-gray-600">모든 캐시 데이터를 삭제합니다</p>
             </div>
-            <button className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50">
+            <button
+              onClick={handleClearCache}
+              className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+            >
               삭제
             </button>
           </div>

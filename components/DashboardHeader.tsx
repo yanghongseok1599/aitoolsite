@@ -17,7 +17,7 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
 
   const baseNavigationItems = [
     { name: '홈', href: '/' },
-    { name: '회사소개', href: '/landing' },
+    { name: 'MY STUDIO', href: '/dashboard' },
     {
       name: '기능',
       href: '#',
@@ -180,9 +180,9 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
                         설정
                       </button>
                       <button
-                        onClick={() => {
-                          signOut({ callbackUrl: '/login' })
+                        onClick={async () => {
                           setShowUserMenu(false)
+                          await signOut({ callbackUrl: '/login', redirect: true })
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
                       >

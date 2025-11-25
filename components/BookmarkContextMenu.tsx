@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface BookmarkContextMenuProps {
   isOpen: boolean
@@ -21,25 +22,33 @@ export function BookmarkContextMenu({
 }: BookmarkContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
   const [adjustedPosition, setAdjustedPosition] = useState(position)
+  const [mounted, setMounted] = useState(false)
+
+  // Portal을 위해 클라이언트 사이드에서만 마운트
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
-    if (!isOpen || !menuRef.current) return
+    if (!isOpen) return
 
-    const menu = menuRef.current
-    const menuRect = menu.getBoundingClientRect()
+    // 메뉴 크기를 기준으로 위치 조정 (메뉴가 렌더링되기 전에 예상 크기로 계산)
+    const menuWidth = 160
+    const menuHeight = 150
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
 
     let { x, y } = position
 
     // Adjust horizontal position if menu goes off screen
-    if (x + menuRect.width > viewportWidth) {
-      x = viewportWidth - menuRect.width - 10 // 10px margin from edge
+    if (x + menuWidth > viewportWidth) {
+      x = viewportWidth - menuWidth - 10
     }
 
     // Adjust vertical position if menu goes off screen
-    if (y + menuRect.height > viewportHeight) {
-      y = viewportHeight - menuRect.height - 10 // 10px margin from edge
+    if (y + menuHeight > viewportHeight) {
+      y = viewportHeight - menuHeight - 10
     }
 
     // Make sure menu doesn't go off left edge
@@ -70,18 +79,22 @@ export function BookmarkContextMenu({
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleEscape)
+    // 약간의 딜레이를 주어 현재 클릭 이벤트가 완료된 후에 리스너 등록
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+    }, 0)
 
     return () => {
+      clearTimeout(timeoutId)
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
+  const menuContent = (
     <div
       ref={menuRef}
       style={{
@@ -94,10 +107,7 @@ export function BookmarkContextMenu({
     >
       {onAddSubscription && (
         <button
-          onClick={() => {
-            onAddSubscription()
-            onClose()
-          }}
+          onClick={onAddSubscription}
           className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,10 +118,7 @@ export function BookmarkContextMenu({
       )}
 
       <button
-        onClick={() => {
-          onEdit()
-          onClose()
-        }}
+        onClick={onEdit}
         className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,10 +130,7 @@ export function BookmarkContextMenu({
       <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
       <button
-        onClick={() => {
-          onDelete()
-          onClose()
-        }}
+        onClick={onDelete}
         className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,4 +140,7 @@ export function BookmarkContextMenu({
       </button>
     </div>
   )
+
+  // Portal을 사용하여 document.body에 직접 렌더링
+  return createPortal(menuContent, document.body)
 }

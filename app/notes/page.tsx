@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Note {
   id: string
@@ -16,6 +17,7 @@ interface Note {
 const NOTES_STORAGE_KEY = 'ai-tools-notes'
 
 export default function NotesPage() {
+  const { confirm: showConfirm } = useAlert()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
@@ -145,8 +147,9 @@ export default function NotesPage() {
     setIsEditing(false)
   }
 
-  const handleDeleteNote = (noteId: string) => {
-    if (confirm('이 메모를 삭제하시겠습니까?')) {
+  const handleDeleteNote = async (noteId: string) => {
+    const confirmed = await showConfirm('이 메모를 삭제하시겠습니까?')
+    if (confirmed) {
       const updatedNotes = notes.filter(note => note.id !== noteId)
       setNotes(updatedNotes)
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(updatedNotes))

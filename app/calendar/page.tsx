@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface CalendarEvent {
   id: string
@@ -40,6 +41,7 @@ const getEventColor = (event: CalendarEvent) => {
 }
 
 export default function CalendarPage() {
+  const { alert: showAlert, success: showSuccess, error: showError } = useAlert()
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -86,7 +88,7 @@ export default function CalendarPage() {
 
   const handleAddEvent = async () => {
     if (!newEvent.summary || !newEvent.start || !newEvent.end) {
-      alert('제목, 시작 시간, 종료 시간은 필수 항목입니다.')
+      showAlert('제목, 시작 시간, 종료 시간은 필수 항목입니다.', { type: 'warning' })
       return
     }
 
@@ -106,15 +108,15 @@ export default function CalendarPage() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        alert('일정이 성공적으로 추가되었습니다!')
+        showSuccess('일정이 성공적으로 추가되었습니다!')
         setIsAddEventModalOpen(false)
         setNewEvent({ summary: '', description: '', start: '', end: '', location: '' })
         window.location.reload()
       } else {
-        alert(data.error || '일정 추가에 실패했습니다.')
+        showError(data.error || '일정 추가에 실패했습니다.')
       }
     } catch (error) {
-      alert('일정 추가 중 오류가 발생했습니다.')
+      showError('일정 추가 중 오류가 발생했습니다.')
     }
   }
 

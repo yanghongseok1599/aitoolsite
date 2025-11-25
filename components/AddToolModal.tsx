@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface AddToolModalProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
   const [iconPreview, setIconPreview] = useState('')
   const [activeTab, setActiveTab] = useState<'auto' | 'upload'>('auto')
   const [isLoading, setIsLoading] = useState(false)
+  const { alert: showAlert } = useAlert()
 
   // Update form when initialData changes or modal opens
   useEffect(() => {
@@ -154,7 +156,7 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
     e.preventDefault()
 
     if (!serviceName.trim() || !url.trim()) {
-      alert('서비스 이름과 URL을 모두 입력해주세요.')
+      showAlert('서비스 이름과 URL을 모두 입력해주세요.', { type: 'warning' })
       return
     }
 

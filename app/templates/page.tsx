@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Template {
   id: string
@@ -17,6 +18,7 @@ interface Template {
 }
 
 export default function TemplatesPage() {
+  const { confirm: showConfirm } = useAlert()
   const [templates, setTemplates] = useState<Template[]>([
     {
       id: '1',
@@ -213,8 +215,9 @@ export default function TemplatesPage() {
     ))
   }
 
-  const deleteTemplate = (id: string) => {
-    if (confirm('이 템플릿을 삭제하시겠습니까?')) {
+  const deleteTemplate = async (id: string) => {
+    const confirmed = await showConfirm('이 템플릿을 삭제하시겠습니까?')
+    if (confirmed) {
       setTemplates(prev => prev.filter(t => t.id !== id))
       if (selectedTemplate?.id === id) {
         setSelectedTemplate(null)

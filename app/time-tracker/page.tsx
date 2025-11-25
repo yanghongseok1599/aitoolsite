@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { useSession } from 'next-auth/react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface TimeEntry {
   id: string
@@ -16,6 +17,7 @@ interface TimeEntry {
 
 export default function TimeTrackerPage() {
   const { data: session } = useSession()
+  const { confirm: showConfirm } = useAlert()
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [currentTask, setCurrentTask] = useState<TimeEntry | null>(null)
   const [newTaskName, setNewTaskName] = useState('')
@@ -98,8 +100,9 @@ export default function TimeTrackerPage() {
     setCurrentTask(null)
   }
 
-  const deleteEntry = (id: string) => {
-    if (confirm('이 기록을 삭제하시겠습니까?')) {
+  const deleteEntry = async (id: string) => {
+    const confirmed = await showConfirm('이 기록을 삭제하시겠습니까?')
+    if (confirmed) {
       setEntries(prev => prev.filter(e => e.id !== id))
       if (currentTask?.id === id) {
         setCurrentTask(null)

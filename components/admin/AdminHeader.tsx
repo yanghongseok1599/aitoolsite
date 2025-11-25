@@ -157,7 +157,10 @@ export function AdminHeader() {
                     내 계정 설정
                   </button>
                   <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={async () => {
+                      setShowDropdown(false)
+                      await signOut({ callbackUrl: '/', redirect: true })
+                    }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <svg

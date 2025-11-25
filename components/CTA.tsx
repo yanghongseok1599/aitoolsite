@@ -20,9 +20,9 @@ export function CTA() {
           </div>
 
           {/* Heading */}
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-relaxed">
             생산성을 높일
-            <span className="block">준비가 되셨나요?</span>
+            <span className="block mt-2">준비가 되셨나요?</span>
           </h2>
 
           {/* Description */}
@@ -35,7 +35,7 @@ export function CTA() {
             <a href="/signup" className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white hover:bg-gray-100 text-primary font-semibold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5 text-center">
               무료로 시작하기
             </a>
-            <a href="/" className="w-full sm:w-auto px-8 py-4 rounded-lg bg-transparent hover:bg-white/10 text-white font-semibold text-lg border-2 border-white/50 backdrop-blur-sm transition-all text-center">
+            <a href="/dashboard" className="w-full sm:w-auto px-8 py-4 rounded-lg bg-transparent hover:bg-white/10 text-white font-semibold text-lg border-2 border-white/50 backdrop-blur-sm transition-all text-center">
               대시보드 둘러보기
             </a>
           </div>

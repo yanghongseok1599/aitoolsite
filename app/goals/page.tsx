@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Goal {
   id: string
@@ -16,6 +17,7 @@ interface Goal {
 }
 
 export default function GoalsPage() {
+  const { alert: showAlert, confirm: showConfirm } = useAlert()
   const [goals, setGoals] = useState<Goal[]>([
     {
       id: '1',
@@ -81,7 +83,7 @@ export default function GoalsPage() {
 
   const handleAddGoal = () => {
     if (!newGoal.title || !newGoal.target || !newGoal.deadline) {
-      alert('필수 항목을 입력해주세요')
+      showAlert('필수 항목을 입력해주세요', { type: 'warning' })
       return
     }
 
@@ -123,8 +125,9 @@ export default function GoalsPage() {
     }))
   }
 
-  const deleteGoal = (id: string) => {
-    if (confirm('이 목표를 삭제하시겠습니까?')) {
+  const deleteGoal = async (id: string) => {
+    const confirmed = await showConfirm('이 목표를 삭제하시겠습니까?')
+    if (confirmed) {
       setGoals(prev => prev.filter(g => g.id !== id))
     }
   }

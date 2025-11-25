@@ -84,7 +84,7 @@ export default function SignupPage() {
             회원가입
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            AI 도구 허브에 오신 것을 환영합니다
+            마이 AI 스튜디오에 오신 것을 환영합니다
           </p>
         </div>
 

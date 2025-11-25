@@ -52,8 +52,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center px-4 py-12">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4">
+      {/* Top Right - Theme Toggle & Admin Link */}
+      <div className="absolute top-4 right-4 flex items-center gap-3">
+        <button
+          onClick={() => router.push('/admin')}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-700/50 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          관리자
+        </button>
         <ThemeToggle />
       </div>
 
@@ -69,7 +78,7 @@ export default function LoginPage() {
             로그인
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            AI 도구 허브에 오신 것을 환영합니다
+            마이 AI 스튜디오에 오신 것을 환영합니다
           </p>
         </div>
 

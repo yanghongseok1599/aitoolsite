@@ -44,7 +44,7 @@ export function Hero() {
               무료로 시작하기
             </a>
             <a
-              href="/"
+              href="/dashboard"
               className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-lg border border-gray-200 dark:border-gray-700 transition-all text-center"
             >
               대시보드 둘러보기
@@ -70,21 +70,6 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Hero Image Placeholder */}
-        <div className="mt-16 max-w-5xl mx-auto">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800">
-            <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-primary/20 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">대시보드 미리보기</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   )

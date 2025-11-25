@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useAlert } from '@/contexts/AlertContext'
 
 export default function SettingsPage() {
   const router = useRouter()
+  const { success: showSuccess, confirm: showConfirm, warning: showWarning } = useAlert()
   const [notifications, setNotifications] = useState({
     orderEmail: true,
     orderSms: false,
@@ -22,19 +24,21 @@ export default function SettingsPage() {
 
   const handleSaveNotifications = () => {
     // TODO: API 호출
-    alert('알림 설정이 저장되었습니다.')
+    showSuccess('알림 설정이 저장되었습니다.')
   }
 
   const handleSavePrivacy = () => {
     // TODO: API 호출
-    alert('개인정보 설정이 저장되었습니다.')
+    showSuccess('개인정보 설정이 저장되었습니다.')
   }
 
-  const handleDeleteAccount = () => {
-    if (confirm('정말로 회원 탈퇴하시겠습니까? 이 작업은 취소할 수 없습니다.')) {
-      if (confirm('모든 데이터가 삭제됩니다. 계속하시겠습니까?')) {
+  const handleDeleteAccount = async () => {
+    const firstConfirm = await showConfirm('정말로 회원 탈퇴하시겠습니까? 이 작업은 취소할 수 없습니다.')
+    if (firstConfirm) {
+      const secondConfirm = await showWarning('모든 데이터가 삭제됩니다. 계속하시겠습니까?')
+      if (secondConfirm) {
         // TODO: API 호출하여 회원 탈퇴
-        signOut({ callbackUrl: '/' })
+        await signOut({ callbackUrl: '/', redirect: true })
       }
     }
   }

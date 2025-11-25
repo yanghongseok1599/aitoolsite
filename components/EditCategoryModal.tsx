@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface EditCategoryModalProps {
   isOpen: boolean
@@ -11,6 +12,7 @@ interface EditCategoryModalProps {
 
 export function EditCategoryModal({ isOpen, onClose, onSave, currentName }: EditCategoryModalProps) {
   const [categoryName, setCategoryName] = useState(currentName)
+  const { alert: showAlert } = useAlert()
 
   useEffect(() => {
     if (isOpen) {
@@ -22,7 +24,7 @@ export function EditCategoryModal({ isOpen, onClose, onSave, currentName }: Edit
     e.preventDefault()
 
     if (!categoryName.trim()) {
-      alert('카테고리 이름을 입력해주세요.')
+      showAlert('카테고리 이름을 입력해주세요.', { type: 'warning' })
       return
     }
 

@@ -53,6 +53,16 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
+        // ccvadmin 관리자 계정
+        if (credentials?.email === 'ccvadmin' && credentials?.password === 'seok315477!') {
+          return {
+            id: 'ccvadmin',
+            name: 'CCV 관리자',
+            email: 'ccvadmin@admin.local',
+            image: null,
+          }
+        }
+
         // 데모 계정
         if (credentials?.email === 'demo@example.com' && credentials?.password === 'demo123') {
           return {
@@ -87,7 +97,8 @@ export const authOptions: NextAuthOptions = {
 
         // Assign admin role to specific users
         if (session.user.email === 'trainermilestone@gmail.com' ||
-            session.user.email === 'admin@aitoolsite.com') {
+            session.user.email === 'admin@aitoolsite.com' ||
+            session.user.email === 'ccvadmin@admin.local') {
           session.user.role = 'admin'
         }
       }

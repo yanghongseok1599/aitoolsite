@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Automation {
   id: string
@@ -15,6 +16,7 @@ interface Automation {
 }
 
 export default function AutomationPage() {
+  const { alert: showAlert, confirm: showConfirm } = useAlert()
   const [automations, setAutomations] = useState<Automation[]>([
     {
       id: '1',
@@ -62,15 +64,16 @@ export default function AutomationPage() {
     ))
   }
 
-  const deleteAutomation = (id: string) => {
-    if (confirm('이 자동화를 삭제하시겠습니까?')) {
+  const deleteAutomation = async (id: string) => {
+    const confirmed = await showConfirm('이 자동화를 삭제하시겠습니까?')
+    if (confirmed) {
       setAutomations(prev => prev.filter(a => a.id !== id))
     }
   }
 
   const addAutomation = () => {
     if (!newAutomation.name) {
-      alert('자동화 이름을 입력해주세요')
+      showAlert('자동화 이름을 입력해주세요', { type: 'warning' })
       return
     }
 

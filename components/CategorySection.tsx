@@ -21,9 +21,10 @@ interface CategorySectionProps {
   onEditBookmark?: (id: string) => void
   onDeleteBookmark?: (id: string) => void
   onEditCategory?: () => void
+  onDeleteCategory?: () => void
 }
 
-export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBookmark, onDeleteBookmark, onEditCategory }: CategorySectionProps) {
+export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBookmark, onDeleteBookmark, onEditCategory, onDeleteCategory }: CategorySectionProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const {
@@ -93,13 +94,26 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
               </svg>
             </button>
           )}
+
+          {/* Delete Category Button */}
+          {onDeleteCategory && (
+            <button
+              onClick={onDeleteCategory}
+              className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100"
+              title="카테고리 삭제"
+            >
+              <svg className="w-4 h-4 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Bookmarks Grid */}
       {isExpanded && (
         <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-6">
             {bookmarks.map((bookmark) => (
               <BookmarkCard
                 key={bookmark.id}
@@ -117,14 +131,14 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
             {onAddBookmark && (
               <button
                 onClick={onAddBookmark}
-                className="flex flex-col items-center space-y-1.5 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
                   추가
                 </span>
               </button>

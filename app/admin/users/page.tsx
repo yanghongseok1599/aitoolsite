@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface UserTableData {
   id: string
@@ -13,6 +14,7 @@ interface UserTableData {
 }
 
 export default function UsersManagementPage() {
+  const { alert: showAlert, confirm: showConfirm } = useAlert()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -60,16 +62,17 @@ export default function UsersManagementPage() {
   }
 
   const handleChangeRole = (userId: string, newRole: 'user' | 'admin') => {
-    alert(`사용자 ${userId}의 역할을 ${newRole}로 변경합니다.`)
+    showAlert(`사용자 ${userId}의 역할을 ${newRole}로 변경합니다.`, { type: 'success' })
   }
 
   const handleChangeStatus = (userId: string, newStatus: UserTableData['status']) => {
-    alert(`사용자 ${userId}의 상태를 ${newStatus}로 변경합니다.`)
+    showAlert(`사용자 ${userId}의 상태를 ${newStatus}로 변경합니다.`, { type: 'success' })
   }
 
-  const handleDeleteUser = (userId: string) => {
-    if (confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
-      alert(`사용자 ${userId}를 삭제합니다.`)
+  const handleDeleteUser = async (userId: string) => {
+    const confirmed = await showConfirm('정말로 이 사용자를 삭제하시겠습니까?')
+    if (confirmed) {
+      showAlert(`사용자 ${userId}를 삭제합니다.`, { type: 'success' })
     }
   }
 

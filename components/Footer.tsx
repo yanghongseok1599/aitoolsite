@@ -16,7 +16,7 @@ export function Footer() {
                 </svg>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                AI 도구 허브
+                마이 AI 스튜디오
               </span>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
@@ -80,7 +80,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
-              © {currentYear} AI 도구 허브. All rights reserved.
+              © {currentYear} 마이 AI 스튜디오. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
               <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">

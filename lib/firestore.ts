@@ -261,3 +261,40 @@ export async function deleteEvent(eventId: string) {
   const eventRef = doc(db, 'events', eventId)
   await deleteDoc(eventRef)
 }
+
+// ============================================
+// AD BANNERS (Global Settings)
+// ============================================
+
+export interface AdBannerSettings {
+  enabled: boolean
+  leftBanner?: {
+    imageUrl: string
+    linkUrl: string
+  }
+  rightBanner?: {
+    imageUrl: string
+    linkUrl: string
+  }
+  updatedAt: Timestamp
+}
+
+// Get ad banner settings
+export async function getAdBannerSettings(): Promise<AdBannerSettings | null> {
+  const settingsRef = doc(db, 'siteSettings', 'adBanners')
+  const snapshot = await getDoc(settingsRef)
+
+  if (snapshot.exists()) {
+    return snapshot.data() as AdBannerSettings
+  }
+  return null
+}
+
+// Save ad banner settings
+export async function saveAdBannerSettings(settings: Partial<AdBannerSettings>) {
+  const settingsRef = doc(db, 'siteSettings', 'adBanners')
+  await setDoc(settingsRef, {
+    ...settings,
+    updatedAt: Timestamp.now(),
+  }, { merge: true })
+}

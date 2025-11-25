@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface Address {
   id: string
@@ -14,6 +15,7 @@ interface Address {
 
 export default function ProfilePage() {
   const { data: session } = useSession()
+  const { success: showSuccess, confirm: showConfirm } = useAlert()
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
@@ -46,7 +48,7 @@ export default function ProfilePage() {
   const handleSave = () => {
     // TODO: API 호출하여 프로필 저장
     setIsEditing(false)
-    alert('프로필이 저장되었습니다.')
+    showSuccess('프로필이 저장되었습니다.')
   }
 
   const handleSetDefaultAddress = (id: string) => {
@@ -56,8 +58,9 @@ export default function ProfilePage() {
     })))
   }
 
-  const handleDeleteAddress = (id: string) => {
-    if (confirm('이 주소를 삭제하시겠습니까?')) {
+  const handleDeleteAddress = async (id: string) => {
+    const confirmed = await showConfirm('이 주소를 삭제하시겠습니까?')
+    if (confirmed) {
       setAddresses(addresses.filter(addr => addr.id !== id))
     }
   }

@@ -29,7 +29,10 @@
       "Bash(cat:*)",
       "Bash(dir /b)",
       "Bash(dir:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(copy:*)",
+      "Bash(kill:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []
