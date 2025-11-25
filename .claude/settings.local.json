@@ -36,7 +36,8 @@
       "Bash(firebase projects:list:*)",
       "Bash(npx firebase login:ci:*)",
       "Bash(npx firebase:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx vercel --version)"
     ],
     "deny": [],
     "ask": []
