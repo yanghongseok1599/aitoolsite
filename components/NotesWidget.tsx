@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { getUserNotes } from '@/lib/firestore'
 
 interface Note {
   id: string
@@ -12,26 +14,39 @@ interface Note {
   color?: string
 }
 
-const NOTES_STORAGE_KEY = 'ai-tools-notes'
-
 export function NotesWidget() {
+  const { data: session } = useSession()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
 
-  // 로컬 스토리지에서 메모 불러오기
+  // Firestore에서 메모 불러오기
   useEffect(() => {
-    try {
-      const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY)
-      if (storedNotes) {
-        const parsedNotes = JSON.parse(storedNotes)
-        setNotes(parsedNotes)
+    const loadNotes = async () => {
+      if (!session?.user?.email) {
+        setLoading(false)
+        return
       }
-    } catch (error) {
-      console.error('Error loading notes from localStorage:', error)
-    } finally {
-      setLoading(false)
+
+      try {
+        const firestoreNotes = await getUserNotes(session.user.email)
+        const formattedNotes = firestoreNotes.map(note => ({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          createdAt: note.createdAt.toDate().toISOString(),
+          updatedAt: note.updatedAt.toDate().toISOString(),
+          color: note.color,
+        }))
+        setNotes(formattedNotes)
+      } catch (error) {
+        console.error('Error loading notes from Firestore:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [])
+
+    loadNotes()
+  }, [session])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

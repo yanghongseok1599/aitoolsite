@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { useAlert } from '@/contexts/AlertContext'
+import { getUserNotes, addNote, updateNote, deleteNote } from '@/lib/firestore'
 
 interface Note {
   id: string
@@ -14,9 +17,9 @@ interface Note {
   isPinned?: boolean
 }
 
-const NOTES_STORAGE_KEY = 'ai-tools-notes'
-
 export default function NotesPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const { confirm: showConfirm } = useAlert()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,46 +29,37 @@ export default function NotesPage() {
   const [editContent, setEditContent] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 로컬 스토리지에서 메모 불러오기
+  // Firestore에서 메모 불러오기
   useEffect(() => {
-    try {
-      const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY)
-      if (storedNotes) {
-        const parsedNotes = JSON.parse(storedNotes)
-        setNotes(parsedNotes)
-      } else {
-        // 처음 방문시 샘플 데이터 제공
-        const sampleNotes: Note[] = [
-          {
-            id: '1',
-            title: '환영합니다! 👋',
-            content: '이곳에서 메모를 작성하고 관리할 수 있습니다.\n\n메모는 자동으로 브라우저에 저장되므로 언제든지 다시 확인할 수 있습니다.\n\n- 새 메모 작성하기\n- 메모 검색하기\n- 중요한 메모 고정하기\n\n지금 바로 시작해보세요!',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            color: 'blue',
-            isPinned: true
-          }
-        ]
-        setNotes(sampleNotes)
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(sampleNotes))
-      }
-    } catch (error) {
-      console.error('Error loading notes from localStorage:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    const loadNotes = async () => {
+      if (status === 'loading') return
 
-  // 메모 변경시 로컬 스토리지에 저장
-  useEffect(() => {
-    if (!loading && notes.length > 0) {
+      if (!session?.user?.email) {
+        router.push('/login')
+        return
+      }
+
       try {
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes))
+        const firestoreNotes = await getUserNotes(session.user.email)
+        const formattedNotes = firestoreNotes.map(note => ({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          createdAt: note.createdAt.toDate().toISOString(),
+          updatedAt: note.updatedAt.toDate().toISOString(),
+          color: note.color,
+          isPinned: note.isPinned,
+        }))
+        setNotes(formattedNotes)
       } catch (error) {
-        console.error('Error saving notes to localStorage:', error)
+        console.error('Error loading notes from Firestore:', error)
+      } finally {
+        setLoading(false)
       }
     }
-  }, [notes, loading])
+
+    loadNotes()
+  }, [session, status, router])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -121,28 +115,44 @@ export default function NotesPage() {
     }
   }
 
-  const handleSaveNote = () => {
-    if (selectedNote) {
-      // 기존 노트 수정
-      setNotes(prev => prev.map(note =>
-        note.id === selectedNote.id
-          ? { ...note, title: editTitle, content: editContent, updatedAt: new Date().toISOString() }
-          : note
-      ))
-      setSelectedNote({ ...selectedNote, title: editTitle, content: editContent })
-    } else {
-      // 새 노트 생성
-      const newNote: Note = {
-        id: Date.now().toString(),
-        title: editTitle || '제목 없음',
-        content: editContent,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        color: 'yellow',
-        isPinned: false
+  const handleSaveNote = async () => {
+    if (!session?.user?.email) return
+
+    try {
+      if (selectedNote) {
+        // 기존 노트 수정
+        await updateNote(selectedNote.id, {
+          title: editTitle,
+          content: editContent,
+        })
+        setNotes(prev => prev.map(note =>
+          note.id === selectedNote.id
+            ? { ...note, title: editTitle, content: editContent, updatedAt: new Date().toISOString() }
+            : note
+        ))
+        setSelectedNote({ ...selectedNote, title: editTitle, content: editContent })
+      } else {
+        // 새 노트 생성
+        const docRef = await addNote(session.user.email, {
+          title: editTitle || '제목 없음',
+          content: editContent,
+          color: 'yellow',
+          isPinned: false
+        })
+        const newNote: Note = {
+          id: docRef.id,
+          title: editTitle || '제목 없음',
+          content: editContent,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          color: 'yellow',
+          isPinned: false
+        }
+        setNotes(prev => [newNote, ...prev])
+        setSelectedNote(newNote)
       }
-      setNotes(prev => [newNote, ...prev])
-      setSelectedNote(newNote)
+    } catch (error) {
+      console.error('Error saving note:', error)
     }
     setIsEditing(false)
   }
@@ -150,19 +160,31 @@ export default function NotesPage() {
   const handleDeleteNote = async (noteId: string) => {
     const confirmed = await showConfirm('이 메모를 삭제하시겠습니까?')
     if (confirmed) {
-      const updatedNotes = notes.filter(note => note.id !== noteId)
-      setNotes(updatedNotes)
-      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(updatedNotes))
-      if (selectedNote?.id === noteId) {
-        setSelectedNote(null)
+      try {
+        await deleteNote(noteId)
+        const updatedNotes = notes.filter(note => note.id !== noteId)
+        setNotes(updatedNotes)
+        if (selectedNote?.id === noteId) {
+          setSelectedNote(null)
+        }
+      } catch (error) {
+        console.error('Error deleting note:', error)
       }
     }
   }
 
-  const togglePin = (noteId: string) => {
-    setNotes(prev => prev.map(note =>
-      note.id === noteId ? { ...note, isPinned: !note.isPinned } : note
-    ))
+  const togglePin = async (noteId: string) => {
+    const note = notes.find(n => n.id === noteId)
+    if (!note) return
+
+    try {
+      await updateNote(noteId, { isPinned: !note.isPinned })
+      setNotes(prev => prev.map(n =>
+        n.id === noteId ? { ...n, isPinned: !n.isPinned } : n
+      ))
+    } catch (error) {
+      console.error('Error toggling pin:', error)
+    }
   }
 
   const filteredNotes = notes.filter(note =>

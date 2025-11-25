@@ -1,6 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import {
+  getUserTodos,
+  addTodo as addTodoToFirestore,
+  updateTodo as updateTodoInFirestore,
+  deleteTodo as deleteTodoFromFirestore
+} from '@/lib/firestore'
 
 interface Todo {
   id: string
@@ -9,33 +16,75 @@ interface Todo {
 }
 
 export function TodoListWidget() {
-  const [todos, setTodos] = useState<Todo[]>([
-    { id: '1', text: '프로젝트 기획안 작성', completed: false },
-    { id: '2', text: '팀 미팅 참석', completed: true },
-    { id: '3', text: '코드 리뷰', completed: false }
-  ])
+  const { data: session } = useSession()
+  const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  const addTodo = (e: React.FormEvent) => {
+  // Firestore에서 할 일 목록 불러오기
+  useEffect(() => {
+    const loadTodos = async () => {
+      if (!session?.user?.email) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const firestoreTodos = await getUserTodos(session.user.email)
+        const formattedTodos = firestoreTodos.map(todo => ({
+          id: todo.id,
+          text: todo.text,
+          completed: todo.completed,
+        }))
+        setTodos(formattedTodos)
+      } catch (error) {
+        console.error('Error loading todos from Firestore:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTodos()
+  }, [session])
+
+  const addTodo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (newTodo.trim()) {
+    if (!newTodo.trim() || !session?.user?.email) return
+
+    try {
+      const docRef = await addTodoToFirestore(session.user.email, newTodo.trim())
       setTodos([...todos, {
-        id: Date.now().toString(),
-        text: newTodo,
+        id: docRef.id,
+        text: newTodo.trim(),
         completed: false
       }])
       setNewTodo('')
+    } catch (error) {
+      console.error('Error adding todo:', error)
     }
   }
 
-  const toggleTodo = (id: string) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ))
+  const toggleTodo = async (id: string) => {
+    const todo = todos.find(t => t.id === id)
+    if (!todo) return
+
+    try {
+      await updateTodoInFirestore(id, { completed: !todo.completed })
+      setTodos(todos.map(t =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      ))
+    } catch (error) {
+      console.error('Error toggling todo:', error)
+    }
   }
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter(todo => todo.id !== id))
+  const deleteTodo = async (id: string) => {
+    try {
+      await deleteTodoFromFirestore(id)
+      setTodos(todos.filter(todo => todo.id !== id))
+    } catch (error) {
+      console.error('Error deleting todo:', error)
+    }
   }
 
   const incompleteTodos = todos.filter(t => !t.completed).length
@@ -77,7 +126,15 @@ export function TodoListWidget() {
 
       {/* Todo List */}
       <div className="space-y-2 max-h-64 overflow-y-auto">
-        {todos.length === 0 ? (
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        ) : todos.length === 0 ? (
           <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">
             할 일을 추가해보세요
           </p>

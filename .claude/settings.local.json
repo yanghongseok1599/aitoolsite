@@ -32,7 +32,11 @@
       "Bash(npm i:*)",
       "Bash(copy:*)",
       "Bash(kill:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(npx firebase login:ci:*)",
+      "Bash(npx firebase:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

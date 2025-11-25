@@ -26,6 +26,12 @@ service cloud.firestore {
       allow write: if isAuthenticated() && isOwner(userId);
     }
 
+    // Widget settings collection
+    match /widgetSettings/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+
     // Notes collection
     match /notes/{noteId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
@@ -40,6 +46,20 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       allow update: if isAuthenticated() && isOwner(resource.data.userId);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Todos collection
+    match /todos/{todoId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Site settings (admin only - ad banners, etc.)
+    match /siteSettings/{settingId} {
+      allow read: if true;  // Everyone can read site settings
+      allow write: if isAuthenticated();  // Only authenticated users can write
     }
   }
 }

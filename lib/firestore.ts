@@ -298,3 +298,84 @@ export async function saveAdBannerSettings(settings: Partial<AdBannerSettings>) 
     updatedAt: Timestamp.now(),
   }, { merge: true })
 }
+
+// ============================================
+// WIDGET SETTINGS
+// ============================================
+
+export interface WidgetSettings {
+  [widgetId: string]: {
+    [key: string]: any
+  }
+}
+
+// Get widget settings for a user
+export async function getUserWidgetSettings(userId: string): Promise<WidgetSettings | null> {
+  const settingsRef = doc(db, 'widgetSettings', userId)
+  const snapshot = await getDoc(settingsRef)
+
+  if (snapshot.exists()) {
+    return snapshot.data() as WidgetSettings
+  }
+  return null
+}
+
+// Save widget settings for a user
+export async function saveUserWidgetSettings(userId: string, widgetId: string, settings: any) {
+  const settingsRef = doc(db, 'widgetSettings', userId)
+  await setDoc(settingsRef, {
+    [widgetId]: settings,
+    updatedAt: Timestamp.now(),
+  }, { merge: true })
+}
+
+// ============================================
+// TODO ITEMS
+// ============================================
+
+export interface FirestoreTodo {
+  id: string
+  text: string
+  completed: boolean
+  userId: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Get all todos for a user
+export async function getUserTodos(userId: string) {
+  const todosRef = collection(db, 'todos')
+  const q = query(todosRef, where('userId', '==', userId))
+  const snapshot = await getDocs(q)
+  const todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreTodo[]
+  return todos.sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis())
+}
+
+// Add a todo
+export async function addTodo(userId: string, text: string) {
+  const todosRef = collection(db, 'todos')
+  const now = Timestamp.now()
+
+  return await addDoc(todosRef, {
+    text,
+    completed: false,
+    userId,
+    createdAt: now,
+    updatedAt: now,
+  })
+}
+
+// Update a todo
+export async function updateTodo(todoId: string, updates: Partial<{ text: string; completed: boolean }>) {
+  const todoRef = doc(db, 'todos', todoId)
+  await updateDoc(todoRef, {
+    ...updates,
+    updatedAt: Timestamp.now(),
+  })
+}
+
+// Delete a todo
+export async function deleteTodo(todoId: string) {
+  const todoRef = doc(db, 'todos', todoId)
+  await deleteDoc(todoRef)
+}
