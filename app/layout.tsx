@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/SessionProvider'
 import { AlertProvider } from '@/contexts/AlertContext'
+import { InAppBrowserDetector } from '@/components/InAppBrowserDetector'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -96,6 +97,7 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider defaultTheme="light">
             <AlertProvider>
+              <InAppBrowserDetector />
               {children}
             </AlertProvider>
           </ThemeProvider>
