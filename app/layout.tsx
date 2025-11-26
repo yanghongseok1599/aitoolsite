@@ -7,7 +7,7 @@ import { AlertProvider } from '@/contexts/AlertContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
-const siteUrl = "https://animated-alpaca-b09201.netlify.app"
+const siteUrl = "https://myaistudio.vercel.app"
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
   },
   category: "technology",
   verification: {
-    // google: "구글 서치 콘솔 인증 코드",
+    google: "6y1AinZYmuDKTPkacDXgcp-vTWe0ZHACK6YWfIRbXpY",
   },
 }
 
