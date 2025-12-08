@@ -1186,21 +1186,29 @@ export default function Home() {
     const newOrder = categoryOrder.map(cat => cat === editingCategory ? newName : cat)
     setCategoryOrder(newOrder)
 
-    // Update all bookmarks in this category in Firebase
+    // Update all bookmarks in this category in Firebase via API
     if (session?.user?.email) {
       const bookmarksToUpdate = bookmarks[editingCategory] || []
       for (const bookmark of bookmarksToUpdate) {
-        await updateBookmark(bookmark.id, {
-          category: newName,
-          name: bookmark.name,
-          url: bookmark.url,
-          icon: bookmark.icon,
-          userId: session.user.email,
-        })
+        try {
+          await fetch('/api/bookmarks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: bookmark.id,
+              category: newName,
+              name: bookmark.name,
+              url: bookmark.url,
+              icon: bookmark.icon,
+            })
+          })
+        } catch (error) {
+          console.error('Failed to update bookmark:', error)
+        }
       }
 
-      // Save new category order
-      await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+      // Save new category order to localStorage (server sync handled separately)
+      localStorage.setItem('categoryOrder', JSON.stringify(newOrder))
     }
   }
 
@@ -1215,10 +1223,16 @@ export default function Home() {
     const confirmed = await showConfirm(message)
     if (!confirmed) return
 
-    // Delete all bookmarks in this category from Firebase
+    // Delete all bookmarks in this category from Firebase via API
     if (session?.user?.email && hasBookmarks) {
       for (const bookmark of categoryBookmarks) {
-        await deleteBookmark(bookmark.id)
+        try {
+          await fetch(`/api/bookmarks?id=${bookmark.id}`, {
+            method: 'DELETE',
+          })
+        } catch (error) {
+          console.error('Failed to delete bookmark:', error)
+        }
       }
     }
 
