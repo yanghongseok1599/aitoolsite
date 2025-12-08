@@ -35,9 +35,24 @@ function getAdminApp(): App {
   // Fallback to environment variables
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+
+  // Support both base64 encoded and plain private key
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+
+  if (!privateKey && process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+    try {
+      privateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_BASE64, 'base64').toString('utf-8')
+    } catch (e) {
+      console.error('Failed to decode FIREBASE_PRIVATE_KEY_BASE64:', e)
+    }
+  }
 
   if (!projectId || !clientEmail || !privateKey) {
+    console.error('Firebase Admin SDK credentials missing:', {
+      hasProjectId: !!projectId,
+      hasClientEmail: !!clientEmail,
+      hasPrivateKey: !!privateKey
+    })
     throw new Error('Firebase Admin SDK credentials are not configured. Please add firebase-service-account.json or set environment variables.')
   }
 
