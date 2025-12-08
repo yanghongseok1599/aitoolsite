@@ -17,13 +17,19 @@ export async function GET(request: NextRequest) {
     const bookmarksRef = db.collection('bookmarks')
     const snapshot = await bookmarksRef
       .where('userId', '==', session.user.email)
-      .orderBy('createdAt', 'desc')
       .get()
 
-    const bookmarks = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    // Sort by createdAt in memory (to avoid needing composite index)
+    const bookmarks = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toMillis?.() || 0
+        const bTime = b.createdAt?.toMillis?.() || 0
+        return bTime - aTime // desc order
+      })
 
     return NextResponse.json({ bookmarks })
   } catch (error) {

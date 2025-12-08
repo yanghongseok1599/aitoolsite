@@ -42,7 +42,8 @@
       "Bash(node scripts/set-settings.js:*)",
       "Bash(node scripts/add-bookmark.js:*)",
       "Bash(npx vercel:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
