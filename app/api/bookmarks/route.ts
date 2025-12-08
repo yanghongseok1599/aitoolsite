@@ -48,7 +48,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const db = getAdminFirestore()
+    let db
+    try {
+      db = getAdminFirestore()
+    } catch (adminError: any) {
+      console.error('Firebase Admin initialization error:', adminError)
+      return NextResponse.json({
+        error: 'Firebase Admin SDK initialization failed',
+        details: adminError?.message || 'Unknown error'
+      }, { status: 500 })
+    }
+
     const bookmarksRef = db.collection('bookmarks')
 
     const docRef = await bookmarksRef.add({
@@ -66,9 +76,12 @@ export async function POST(request: NextRequest) {
       id: docRef.id,
       message: 'Bookmark created successfully'
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating bookmark:', error)
-    return NextResponse.json({ error: 'Failed to create bookmark' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Failed to create bookmark',
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
 
