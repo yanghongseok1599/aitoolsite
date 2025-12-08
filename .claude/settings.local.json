@@ -41,7 +41,8 @@
       "Bash(del \"c:\\AI PROJECT\\AI TOOL SITE\\public\\trainermileston-aitoolsite-firebase-adminsdk-fbsvc-3dd55c1971.json\")",
       "Bash(node scripts/set-settings.js:*)",
       "Bash(node scripts/add-bookmark.js:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []
