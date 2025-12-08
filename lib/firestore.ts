@@ -11,8 +11,18 @@ import {
   orderBy,
   Timestamp,
   addDoc,
+  Firestore,
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { db, getFirebaseDb } from './firebase'
+
+// Helper to get db with null check
+function getDb(): Firestore {
+  const firestore = db || getFirebaseDb()
+  if (!firestore) {
+    throw new Error('Firestore is not initialized. Please check your Firebase configuration.')
+  }
+  return firestore
+}
 
 // ============================================
 // BOOKMARKS
@@ -32,7 +42,7 @@ export interface FirestoreBookmark {
 
 // Get all bookmarks for a user
 export async function getUserBookmarks(userId: string) {
-  const bookmarksRef = collection(db, 'bookmarks')
+  const bookmarksRef = collection(getDb(), 'bookmarks')
   // Remove orderBy to avoid composite index requirement
   const q = query(bookmarksRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
@@ -48,7 +58,7 @@ export async function addBookmark(userId: string, category: string, bookmark: {
   icon?: string
   description?: string
 }) {
-  const bookmarksRef = collection(db, 'bookmarks')
+  const bookmarksRef = collection(getDb(), 'bookmarks')
   const now = Timestamp.now()
 
   return await addDoc(bookmarksRef, {
@@ -63,7 +73,7 @@ export async function addBookmark(userId: string, category: string, bookmark: {
 // Update a bookmark
 export async function updateBookmark(bookmarkId: string, updates: Partial<FirestoreBookmark>) {
   try {
-    const bookmarkRef = doc(db, 'bookmarks', bookmarkId)
+    const bookmarkRef = doc(getDb(), 'bookmarks', bookmarkId)
     const bookmarkDoc = await getDoc(bookmarkRef)
 
     if (!bookmarkDoc.exists()) {
@@ -82,7 +92,7 @@ export async function updateBookmark(bookmarkId: string, updates: Partial<Firest
 
 // Delete a bookmark
 export async function deleteBookmark(bookmarkId: string) {
-  const bookmarkRef = doc(db, 'bookmarks', bookmarkId)
+  const bookmarkRef = doc(getDb(), 'bookmarks', bookmarkId)
   await deleteDoc(bookmarkRef)
 }
 
@@ -103,7 +113,7 @@ export interface UserSettings {
 
 // Get user settings
 export async function getUserSettings(userId: string): Promise<UserSettings | null> {
-  const settingsRef = doc(db, 'userSettings', userId)
+  const settingsRef = doc(getDb(), 'userSettings', userId)
   const snapshot = await getDoc(settingsRef)
 
   if (snapshot.exists()) {
@@ -114,7 +124,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings | nu
 
 // Save user settings
 export async function saveUserSettings(userId: string, settings: Partial<UserSettings>) {
-  const settingsRef = doc(db, 'userSettings', userId)
+  const settingsRef = doc(getDb(), 'userSettings', userId)
   await setDoc(settingsRef, {
     userId,
     ...settings,
@@ -139,7 +149,7 @@ export interface FirestoreNote {
 
 // Get all notes for a user
 export async function getUserNotes(userId: string) {
-  const notesRef = collection(db, 'notes')
+  const notesRef = collection(getDb(), 'notes')
   // Remove orderBy to avoid composite index requirement
   const q = query(notesRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
@@ -155,7 +165,7 @@ export async function addNote(userId: string, note: {
   color?: string
   isPinned?: boolean
 }) {
-  const notesRef = collection(db, 'notes')
+  const notesRef = collection(getDb(), 'notes')
   const now = Timestamp.now()
 
   return await addDoc(notesRef, {
@@ -168,7 +178,7 @@ export async function addNote(userId: string, note: {
 
 // Update a note
 export async function updateNote(noteId: string, updates: Partial<FirestoreNote>) {
-  const noteRef = doc(db, 'notes', noteId)
+  const noteRef = doc(getDb(), 'notes', noteId)
   await updateDoc(noteRef, {
     ...updates,
     updatedAt: Timestamp.now(),
@@ -177,7 +187,7 @@ export async function updateNote(noteId: string, updates: Partial<FirestoreNote>
 
 // Delete a note
 export async function deleteNote(noteId: string) {
-  const noteRef = doc(db, 'notes', noteId)
+  const noteRef = doc(getDb(), 'notes', noteId)
   await deleteDoc(noteRef)
 }
 
@@ -199,7 +209,7 @@ export interface FirestoreEvent {
 
 // Get all events for a user
 export async function getUserEvents(userId: string) {
-  const eventsRef = collection(db, 'events')
+  const eventsRef = collection(getDb(), 'events')
   // Remove orderBy to avoid composite index requirement
   const q = query(eventsRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
@@ -216,7 +226,7 @@ export async function addEvent(userId: string, event: {
   end: Date
   color?: string
 }) {
-  const eventsRef = collection(db, 'events')
+  const eventsRef = collection(getDb(), 'events')
   const now = Timestamp.now()
 
   return await addDoc(eventsRef, {
@@ -239,7 +249,7 @@ export async function updateEvent(eventId: string, updates: Partial<{
   end: Date
   color?: string
 }>) {
-  const eventRef = doc(db, 'events', eventId)
+  const eventRef = doc(getDb(), 'events', eventId)
   const updateData: any = {
     ...updates,
     updatedAt: Timestamp.now(),
@@ -258,7 +268,7 @@ export async function updateEvent(eventId: string, updates: Partial<{
 
 // Delete an event
 export async function deleteEvent(eventId: string) {
-  const eventRef = doc(db, 'events', eventId)
+  const eventRef = doc(getDb(), 'events', eventId)
   await deleteDoc(eventRef)
 }
 
@@ -281,7 +291,7 @@ export interface AdBannerSettings {
 
 // Get ad banner settings
 export async function getAdBannerSettings(): Promise<AdBannerSettings | null> {
-  const settingsRef = doc(db, 'siteSettings', 'adBanners')
+  const settingsRef = doc(getDb(), 'siteSettings', 'adBanners')
   const snapshot = await getDoc(settingsRef)
 
   if (snapshot.exists()) {
@@ -292,7 +302,7 @@ export async function getAdBannerSettings(): Promise<AdBannerSettings | null> {
 
 // Save ad banner settings
 export async function saveAdBannerSettings(settings: Partial<AdBannerSettings>) {
-  const settingsRef = doc(db, 'siteSettings', 'adBanners')
+  const settingsRef = doc(getDb(), 'siteSettings', 'adBanners')
   await setDoc(settingsRef, {
     ...settings,
     updatedAt: Timestamp.now(),
@@ -311,7 +321,7 @@ export interface WidgetSettings {
 
 // Get widget settings for a user
 export async function getUserWidgetSettings(userId: string): Promise<WidgetSettings | null> {
-  const settingsRef = doc(db, 'widgetSettings', userId)
+  const settingsRef = doc(getDb(), 'widgetSettings', userId)
   const snapshot = await getDoc(settingsRef)
 
   if (snapshot.exists()) {
@@ -322,7 +332,7 @@ export async function getUserWidgetSettings(userId: string): Promise<WidgetSetti
 
 // Save widget settings for a user
 export async function saveUserWidgetSettings(userId: string, widgetId: string, settings: any) {
-  const settingsRef = doc(db, 'widgetSettings', userId)
+  const settingsRef = doc(getDb(), 'widgetSettings', userId)
   await setDoc(settingsRef, {
     [widgetId]: settings,
     updatedAt: Timestamp.now(),
@@ -344,7 +354,7 @@ export interface FirestoreTodo {
 
 // Get all todos for a user
 export async function getUserTodos(userId: string) {
-  const todosRef = collection(db, 'todos')
+  const todosRef = collection(getDb(), 'todos')
   const q = query(todosRef, where('userId', '==', userId))
   const snapshot = await getDocs(q)
   const todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FirestoreTodo[]
@@ -353,7 +363,7 @@ export async function getUserTodos(userId: string) {
 
 // Add a todo
 export async function addTodo(userId: string, text: string) {
-  const todosRef = collection(db, 'todos')
+  const todosRef = collection(getDb(), 'todos')
   const now = Timestamp.now()
 
   return await addDoc(todosRef, {
@@ -367,7 +377,7 @@ export async function addTodo(userId: string, text: string) {
 
 // Update a todo
 export async function updateTodo(todoId: string, updates: Partial<{ text: string; completed: boolean }>) {
-  const todoRef = doc(db, 'todos', todoId)
+  const todoRef = doc(getDb(), 'todos', todoId)
   await updateDoc(todoRef, {
     ...updates,
     updatedAt: Timestamp.now(),
@@ -376,6 +386,6 @@ export async function updateTodo(todoId: string, updates: Partial<{ text: string
 
 // Delete a todo
 export async function deleteTodo(todoId: string) {
-  const todoRef = doc(db, 'todos', todoId)
+  const todoRef = doc(getDb(), 'todos', todoId)
   await deleteDoc(todoRef)
 }
