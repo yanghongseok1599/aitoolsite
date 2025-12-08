@@ -966,15 +966,23 @@ export default function Home() {
                 [targetCategory]: newTargetBookmarks
               }))
 
-              // Update in Firebase
+              // Update in Firebase via API
               if (session?.user?.email) {
-                await updateBookmark(activeId, {
-                  category: targetCategory,
-                  name: movedBookmark.name,
-                  url: movedBookmark.url,
-                  icon: movedBookmark.icon,
-                  userId: session.user.email,
-                })
+                try {
+                  await fetch('/api/bookmarks', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      id: activeId,
+                      category: targetCategory,
+                      name: movedBookmark.name,
+                      url: movedBookmark.url,
+                      icon: movedBookmark.icon,
+                    })
+                  })
+                } catch (error) {
+                  console.error('Failed to update bookmark:', error)
+                }
               }
             }
           } else if (sourceCategory === targetCategory) {

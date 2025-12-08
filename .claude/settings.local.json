@@ -39,7 +39,9 @@
       "Bash(npx tsc:*)",
       "Bash(npx vercel --version)",
       "Bash(del \"c:\\AI PROJECT\\AI TOOL SITE\\public\\trainermileston-aitoolsite-firebase-adminsdk-fbsvc-3dd55c1971.json\")",
-      "Bash(node scripts/set-settings.js:*)"
+      "Bash(node scripts/set-settings.js:*)",
+      "Bash(node scripts/add-bookmark.js:*)",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

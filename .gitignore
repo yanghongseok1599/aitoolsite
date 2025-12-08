@@ -52,3 +52,5 @@ scripts/
 # Temporary/test files
 test-*.js
 *.log
+
+.vercel
