@@ -42,3 +42,13 @@ nul
 # Firebase Admin SDK keys (NEVER commit these!)
 *firebase-adminsdk*.json
 firebase-service-account.json
+
+# Local scripts (development utilities)
+scripts/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Temporary/test files
+test-*.js
+*.log

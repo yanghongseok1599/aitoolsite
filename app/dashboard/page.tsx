@@ -109,6 +109,13 @@ const sampleBookmarks: { [key: string]: Bookmark[] } = {
       description: '네이버 크리에이터 어드바이저'
     },
     {
+      id: '10-1',
+      name: '트레이너마일스톤',
+      url: 'https://trainer-milestone-cartel.vercel.app/',
+      icon: 'https://www.google.com/s2/favicons?domain=trainer-milestone-cartel.vercel.app&sz=128',
+      description: '트레이너 마일스톤'
+    },
+    {
       id: '11',
       name: '블덱스',
       url: 'https://blogdex.space/',
