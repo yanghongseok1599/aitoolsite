@@ -22,14 +22,14 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
       name: '기능',
       href: '#',
       submenu: [
-        { name: '스마트 캘린더', href: '/calendar', icon: '📅' },
-        { name: '메모 & 노트', href: '/notes', icon: '📝' },
-        { name: 'AI 사용 통계', href: '/analytics', icon: '📊' },
-        { name: 'AI 구독 관리', href: '/subscription', icon: '💳' },
-        { name: '목표 & 달성률', href: '/goals', icon: '🎯' },
-        { name: 'AI 도구 추천', href: '/recommendations', icon: '✨' },
-        { name: '학습 리소스', href: '/learning', icon: '📚' },
-        { name: '템플릿 모음', href: '/templates', icon: '📋' },
+        { name: '스마트 캘린더', href: '/calendar' },
+        { name: '메모 & 노트', href: '/notes' },
+        { name: 'AI 사용 통계', href: '/analytics' },
+        { name: 'AI 구독 관리', href: '/subscription' },
+        { name: '목표 & 달성률', href: '/goals' },
+        { name: 'AI 도구 추천', href: '/recommendations' },
+        { name: '학습 리소스', href: '/learning' },
+        { name: '템플릿 모음', href: '/templates' },
       ]
     },
     { name: '요금제', href: '/products' }
@@ -94,10 +94,9 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
                                 router.push(subItem.href)
                                 setShowSubmenu(null)
                               }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                              <span className="text-lg">{subItem.icon}</span>
-                              <span>{subItem.name}</span>
+                              {subItem.name}
                             </button>
                           ))}
                         </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 interface SidebarItem {
   title: string
@@ -39,6 +40,22 @@ const sidebarItems: SidebarItem[] = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
+
+  // 로컬 스토리지에서 상태 불러오기
+  useEffect(() => {
+    const saved = localStorage.getItem('adminSidebarCollapsed')
+    if (saved === 'true') {
+      setCollapsed(true)
+    }
+  }, [])
+
+  // 상태 변경시 저장
+  const toggleSidebar = () => {
+    const newState = !collapsed
+    setCollapsed(newState)
+    localStorage.setItem('adminSidebarCollapsed', String(newState))
+  }
 
   const isActive = (href: string) => {
     if (href === '/admin') {
@@ -48,18 +65,41 @@ export function AdminSidebar() {
   }
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900">관리자</h2>
-        <p className="text-sm text-gray-600 mt-1">시스템 관리</p>
+    <div className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 min-h-screen transition-all duration-300 relative`}>
+      {/* 토글 버튼 */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-20 bg-white border border-gray-200 rounded-full p-1 shadow-md hover:bg-gray-50 z-10"
+        title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+      >
+        <svg
+          className={`w-4 h-4 text-gray-600 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <div className={`p-6 ${collapsed ? 'px-2' : ''}`}>
+        {collapsed ? (
+          <h2 className="text-lg font-bold text-gray-900 text-center">AI</h2>
+        ) : (
+          <>
+            <h2 className="text-xl font-bold text-gray-900">관리자</h2>
+            <p className="text-sm text-gray-600 mt-1">시스템 관리</p>
+          </>
+        )}
       </div>
 
-      <nav className="px-3">
+      <nav className={`${collapsed ? 'px-1' : 'px-3'}`}>
         {sidebarItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-3 py-3 rounded-lg mb-1 transition-colors ${
+            title={collapsed ? item.title : undefined}
+            className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-3 rounded-lg mb-1 transition-colors ${
               isActive(item.href)
                 ? 'bg-blue-50 text-blue-600'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -78,15 +118,16 @@ export function AdminSidebar() {
                 d={item.icon}
               />
             </svg>
-            <span className="font-medium">{item.title}</span>
+            {!collapsed && <span className="font-medium">{item.title}</span>}
           </Link>
         ))}
       </nav>
 
-      <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+      <div className={`absolute bottom-0 ${collapsed ? 'w-16' : 'w-64'} p-4 border-t border-gray-200`}>
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+          title={collapsed ? '사이트로 돌아가기' : undefined}
+          className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'} text-sm text-gray-600 hover:text-gray-900`}
         >
           <svg
             className="w-4 h-4"
@@ -101,7 +142,7 @@ export function AdminSidebar() {
               d="M10 19l-7-7m0 0l7-7m-7 7h18"
             />
           </svg>
-          사이트로 돌아가기
+          {!collapsed && '사이트로 돌아가기'}
         </Link>
       </div>
     </div>

@@ -23,62 +23,8 @@ export default function OrdersManagementPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-2024-156',
-      customerName: '홍길동',
-      customerEmail: 'hong@example.com',
-      productName: '프리미엄 플랜 - 월간 구독',
-      amount: 100,
-      status: 'paid',
-      orderDate: '2024-01-20',
-      shippingAddress: '서울특별시 강남구 테헤란로 123'
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-2024-155',
-      customerName: '김철수',
-      customerEmail: 'kim@example.com',
-      productName: '기본형 플랜',
-      amount: 0,
-      status: 'delivered',
-      orderDate: '2024-01-19',
-      shippingAddress: '서울특별시 송파구 올림픽로 456'
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-2024-154',
-      customerName: '이영희',
-      customerEmail: 'lee@example.com',
-      productName: '엔터프라이즈 플랜 - 연간 구독',
-      amount: 479520,
-      status: 'shipping',
-      orderDate: '2024-01-18',
-      shippingAddress: '부산광역시 해운대구 센텀로 789'
-    },
-    {
-      id: '4',
-      orderNumber: 'ORD-2024-153',
-      customerName: '박민수',
-      customerEmail: 'park@example.com',
-      productName: '프리미엄 플랜 - 월간 구독',
-      amount: 100,
-      status: 'preparing',
-      orderDate: '2024-01-18',
-      shippingAddress: '대구광역시 중구 동성로 321'
-    },
-    {
-      id: '5',
-      orderNumber: 'ORD-2024-152',
-      customerName: '정수진',
-      customerEmail: 'jung@example.com',
-      productName: '기본형 플랜',
-      amount: 0,
-      status: 'cancelled',
-      orderDate: '2024-01-17'
-    }
-  ]
+  // 실제 주문 데이터가 연동되기 전까지 빈 배열
+  const orders: Order[] = []
 
   const getStatusBadge = (status: OrderStatus) => {
     const badges = {
@@ -232,35 +178,48 @@ export default function OrdersManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{order.orderNumber}</td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{order.customerName}</p>
-                      <p className="text-xs text-gray-600">{order.customerEmail}</p>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-3">
+                      <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      <p>등록된 주문이 없습니다.</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{order.productName}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {order.amount === 0 ? '무료' : `₩${order.amount.toLocaleString()}`}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(order.status).color}`}>
-                      {getStatusBadge(order.status).text}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{order.orderDate}</td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleViewDetails(order)}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      상세보기
-                    </button>
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{order.orderNumber}</td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{order.customerName}</p>
+                        <p className="text-xs text-gray-600">{order.customerEmail}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{order.productName}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {order.amount === 0 ? '무료' : `₩${order.amount.toLocaleString()}`}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(order.status).color}`}>
+                        {getStatusBadge(order.status).text}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{order.orderDate}</td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleViewDetails(order)}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        상세보기
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -113,7 +113,7 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
       {/* Bookmarks Grid */}
       {isExpanded && (
         <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
             {bookmarks.map((bookmark) => (
               <BookmarkCard
                 key={bookmark.id}

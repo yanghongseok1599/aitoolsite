@@ -16,7 +16,7 @@ interface ProductAdmin {
 }
 
 export default function ProductsManagementPage() {
-  const { alert: showAlert, confirm: showConfirm, success: showSuccess } = useAlert()
+  const { confirm: showConfirm, success: showSuccess } = useAlert()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -24,41 +24,8 @@ export default function ProductsManagementPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductAdmin | null>(null)
 
-  const products: ProductAdmin[] = [
-    {
-      id: 'basic',
-      name: '기본형 플랜',
-      price: 0,
-      stock: 999,
-      category: '개인용',
-      status: 'active',
-      isVisible: true,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-15'
-    },
-    {
-      id: 'premium',
-      name: '프리미엄 플랜',
-      price: 100,
-      stock: 999,
-      category: '개인용',
-      status: 'active',
-      isVisible: true,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-18'
-    },
-    {
-      id: 'enterprise',
-      name: '엔터프라이즈 플랜',
-      price: 49900,
-      stock: 999,
-      category: '비즈니스용',
-      status: 'active',
-      isVisible: true,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-20'
-    }
-  ]
+  // 실제 상품 데이터가 연동되기 전까지 빈 배열
+  const products: ProductAdmin[] = []
 
   const getStatusBadge = (status: ProductAdmin['status']) => {
     const badges = {
@@ -206,62 +173,81 @@ export default function ProductsManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                        <p className="text-xs text-gray-600">ID: {product.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.category}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {product.price === 0 ? '무료' : `₩${product.price.toLocaleString()}`}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.stock}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(product.status).color}`}>
-                      {getStatusBadge(product.status).text}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleToggleVisibility(product.id, product.isVisible)}
-                      className={`px-2 py-1 text-xs rounded ${
-                        product.isVisible
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {product.isVisible ? '노출' : '숨김'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.updatedAt}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-3">
+                      <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      <p>등록된 상품이 없습니다.</p>
                       <button
-                        onClick={() => handleEditProduct(product)}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        onClick={() => setShowAddModal(true)}
+                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                       >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
-                      >
-                        삭제
+                        첫 상품 추가하기
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                          <p className="text-xs text-gray-600">ID: {product.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{product.category}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {product.price === 0 ? '무료' : `₩${product.price.toLocaleString()}`}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{product.stock}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(product.status).color}`}>
+                        {getStatusBadge(product.status).text}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleToggleVisibility(product.id, product.isVisible)}
+                        className={`px-2 py-1 text-xs rounded ${
+                          product.isVisible
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {product.isVisible ? '노출' : '숨김'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{product.updatedAt}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditProduct(product)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -416,7 +402,7 @@ export default function ProductsManagementPage() {
                 </button>
                 <button
                   onClick={() => {
-                    alert('상품이 수정되었습니다.')
+                    showSuccess('상품이 수정되었습니다.')
                     setShowEditModal(false)
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

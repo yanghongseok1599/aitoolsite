@@ -1,12 +1,45 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { getAdminFirestore } from './firebase-admin'
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 
 if (!googleClientId || !googleClientSecret) {
   console.error('Missing Google OAuth credentials')
+}
+
+// Save user to Firestore on login
+async function saveUserToFirestore(user: { id: string; email: string; name?: string | null; image?: string | null }, provider: string) {
+  try {
+    const db = getAdminFirestore()
+    const userRef = db.collection('users').doc(user.id)
+    const userDoc = await userRef.get()
+
+    const userData = {
+      email: user.email,
+      displayName: user.name || null,
+      photoURL: user.image || null,
+      provider: provider,
+      updatedAt: new Date().toISOString(),
+    }
+
+    if (!userDoc.exists) {
+      // New user
+      await userRef.set({
+        ...userData,
+        role: 'user',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      })
+    } else {
+      // Update existing user
+      await userRef.update(userData)
+    }
+  } catch (error) {
+    console.error('Failed to save user to Firestore:', error)
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -83,6 +116,21 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
+    async signIn({ user, account }) {
+      // Save user to Firestore on every sign in
+      if (user.email) {
+        const provider = account?.provider === 'google' ? 'Google' :
+                        account?.provider === 'credentials' ? 'Email' :
+                        account?.provider || 'Unknown'
+        await saveUserToFirestore({
+          id: user.id || user.email,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        }, provider)
+      }
+      return true
+    },
     async jwt({ token, account }) {
       // 로그인 시 액세스 토큰 저장
       if (account) {

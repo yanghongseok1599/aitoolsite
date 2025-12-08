@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAlert } from '@/contexts/AlertContext'
-import { db } from '@/lib/firebase'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { getAdBannerSettings, saveAdBannerSettings, AdBannerSettings } from '@/lib/firestore'
 
 interface SiteSettings {
@@ -24,9 +22,21 @@ interface SiteSettings {
   }
 }
 
+interface DefaultCategory {
+  name: string
+  order: number
+}
+
+interface DefaultBookmark {
+  category: string
+  name: string
+  url: string
+  icon?: string
+}
+
 const defaultSettings: SiteSettings = {
-  siteName: 'AI Tools 북마크',
-  contactEmail: 'contact@aitools.com',
+  siteName: '마이 AI 스튜디오',
+  contactEmail: 'ccv5@naver.com',
   contactPhone: '1588-0000',
   logoUrl: '',
   paymentMethods: {
@@ -52,22 +62,37 @@ export default function SettingsPage() {
   const [adBannerEnabled, setAdBannerEnabled] = useState(false)
   const [isSavingAdBanner, setIsSavingAdBanner] = useState(false)
 
-  // Load settings from Firebase
+  // Dashboard defaults state
+  const [defaultCategories, setDefaultCategories] = useState<DefaultCategory[]>([])
+  const [defaultBookmarks, setDefaultBookmarks] = useState<DefaultBookmark[]>([])
+  const [isSavingDefaults, setIsSavingDefaults] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newBookmark, setNewBookmark] = useState({ category: '', name: '', url: '', icon: '' })
+
+  // Load settings from API
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const docRef = doc(db, 'admin', 'settings')
-        const docSnap = await getDoc(docRef)
-
-        if (docSnap.exists()) {
-          const data = docSnap.data() as SiteSettings
-          setSettings({ ...defaultSettings, ...data })
+        const response = await fetch('/api/admin/settings')
+        if (response.ok) {
+          const data = await response.json()
+          if (data && Object.keys(data).length > 0) {
+            setSettings({ ...defaultSettings, ...data })
+          }
         }
 
         // Load ad banner settings
         const adSettings = await getAdBannerSettings()
         if (adSettings) {
           setAdBannerEnabled(adSettings.enabled ?? false)
+        }
+
+        // Load dashboard defaults
+        const defaultsResponse = await fetch('/api/admin/dashboard-defaults')
+        if (defaultsResponse.ok) {
+          const defaultsData = await defaultsResponse.json()
+          setDefaultCategories(defaultsData.categories || [])
+          setDefaultBookmarks(defaultsData.bookmarks || [])
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
@@ -79,17 +104,27 @@ export default function SettingsPage() {
     loadSettings()
   }, [])
 
-  // Save settings to Firebase
+  // Save settings via API
   const saveSettings = async (newSettings: Partial<SiteSettings>, message: string) => {
     setIsSaving(true)
     try {
-      const docRef = doc(db, 'admin', 'settings')
-      await setDoc(docRef, { ...settings, ...newSettings }, { merge: true })
-      setSettings(prev => ({ ...prev, ...newSettings }))
+      const updatedSettings = { ...settings, ...newSettings }
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedSettings)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save settings')
+      }
+
+      setSettings(updatedSettings)
       showSuccess(message)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save settings:', error)
-      showError('설정 저장에 실패했습니다.')
+      showError(`설정 저장에 실패했습니다: ${error?.message || '알 수 없는 오류'}`)
     } finally {
       setIsSaving(false)
     }
@@ -176,6 +211,60 @@ export default function SettingsPage() {
       showError('광고 배너 설정 저장에 실패했습니다.')
     } finally {
       setIsSavingAdBanner(false)
+    }
+  }
+
+  // Dashboard defaults handlers
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      showError('카테고리 이름을 입력해주세요.')
+      return
+    }
+    if (defaultCategories.some(c => c.name === newCategoryName.trim())) {
+      showError('이미 존재하는 카테고리입니다.')
+      return
+    }
+    setDefaultCategories(prev => [...prev, { name: newCategoryName.trim(), order: prev.length }])
+    setNewCategoryName('')
+  }
+
+  const handleRemoveCategory = (name: string) => {
+    setDefaultCategories(prev => prev.filter(c => c.name !== name))
+    setDefaultBookmarks(prev => prev.filter(b => b.category !== name))
+  }
+
+  const handleAddBookmark = () => {
+    if (!newBookmark.category || !newBookmark.name.trim() || !newBookmark.url.trim()) {
+      showError('카테고리, 이름, URL을 모두 입력해주세요.')
+      return
+    }
+    let url = newBookmark.url.trim()
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url
+    }
+    const icon = newBookmark.icon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`
+    setDefaultBookmarks(prev => [...prev, { ...newBookmark, url, icon }])
+    setNewBookmark({ category: '', name: '', url: '', icon: '' })
+  }
+
+  const handleRemoveBookmark = (index: number) => {
+    setDefaultBookmarks(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSaveDashboardDefaults = async () => {
+    setIsSavingDefaults(true)
+    try {
+      const response = await fetch('/api/admin/dashboard-defaults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: defaultCategories, bookmarks: defaultBookmarks })
+      })
+      if (!response.ok) throw new Error('Failed to save')
+      showSuccess('대시보드 기본 설정이 저장되었습니다.')
+    } catch (error) {
+      showError('저장에 실패했습니다.')
+    } finally {
+      setIsSavingDefaults(false)
     }
   }
 

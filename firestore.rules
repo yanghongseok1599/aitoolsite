@@ -61,5 +61,17 @@ service cloud.firestore {
       allow read: if true;  // Everyone can read site settings
       allow write: if isAuthenticated();  // Only authenticated users can write
     }
+
+    // Admin settings collection
+    match /admin/{document=**} {
+      allow read: if true;  // Everyone can read admin settings (site name, logo, etc.)
+      allow write: if isAuthenticated();  // Only authenticated users can write
+    }
+
+    // Users collection (managed by server-side Admin SDK)
+    match /users/{userId} {
+      allow read: if true;  // Admin SDK handles read from server
+      allow write: if false;  // Only Admin SDK can write
+    }
   }
 }

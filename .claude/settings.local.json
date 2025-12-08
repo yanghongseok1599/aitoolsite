@@ -37,7 +37,9 @@
       "Bash(npx firebase login:ci:*)",
       "Bash(npx firebase:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vercel --version)"
+      "Bash(npx vercel --version)",
+      "Bash(del \"c:\\AI PROJECT\\AI TOOL SITE\\public\\trainermileston-aitoolsite-firebase-adminsdk-fbsvc-3dd55c1971.json\")",
+      "Bash(node scripts/set-settings.js:*)"
     ],
     "deny": [],
     "ask": []
