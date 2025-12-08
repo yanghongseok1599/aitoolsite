@@ -1,7 +1,7 @@
-import { initializeApp, getApps } from "firebase/app"
-import { getFirestore } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
-import { getStorage } from "firebase/storage"
+import { initializeApp, getApps, FirebaseApp } from "firebase/app"
+import { getFirestore, Firestore } from "firebase/firestore"
+import { getAuth, Auth } from "firebase/auth"
+import { getStorage, FirebaseStorage } from "firebase/storage"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,12 +13,53 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
-// Initialize Firebase (only if not already initialized)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+// Check if we have valid Firebase config (needed for build time)
+const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.projectId
 
-// Initialize services
-export const db = getFirestore(app)
-export const auth = getAuth(app)
-export const storage = getStorage(app)
+let app: FirebaseApp | undefined
+let db: Firestore | undefined
+let auth: Auth | undefined
+let storage: FirebaseStorage | undefined
 
+// Only initialize Firebase if we have valid config
+if (hasValidConfig) {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+  db = getFirestore(app)
+  auth = getAuth(app)
+  storage = getStorage(app)
+}
+
+// Lazy initialization for client-side
+function getFirebaseApp(): FirebaseApp {
+  if (!app) {
+    if (!hasValidConfig) {
+      throw new Error('Firebase configuration is missing. Please check your environment variables.')
+    }
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+  }
+  return app
+}
+
+function getFirebaseDb(): Firestore {
+  if (!db) {
+    db = getFirestore(getFirebaseApp())
+  }
+  return db
+}
+
+function getFirebaseAuth(): Auth {
+  if (!auth) {
+    auth = getAuth(getFirebaseApp())
+  }
+  return auth
+}
+
+function getFirebaseStorage(): FirebaseStorage {
+  if (!storage) {
+    storage = getStorage(getFirebaseApp())
+  }
+  return storage
+}
+
+export { db, auth, storage, getFirebaseDb, getFirebaseAuth, getFirebaseStorage }
 export default app
