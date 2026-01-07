@@ -9,13 +9,17 @@ interface Subscription {
   price: number
   currency: string
   billingCycle: 'monthly' | 'annual' | 'weekly'
-  nextBillingDate: string
+  nextBillingDate: string | null
   category: string
-  icon: string
-  url: string
+  icon: string | null
+  url: string | null
   autoRenew: boolean
   notes: string
   status?: 'active' | 'cancelled' | 'expired'
+  startDate?: string
+  source?: 'manual' | 'gmail'
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface SubscriptionModalProps {
