@@ -201,7 +201,7 @@ export function SubscriptionModal({ isOpen, onClose, onSave, subscription, mode 
               </label>
               <input
                 type="text"
-                value={formData.icon}
+                value={formData.icon || ''}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                 className="w-16 h-10 text-center text-xl border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
                 maxLength={2}
@@ -304,7 +304,7 @@ export function SubscriptionModal({ isOpen, onClose, onSave, subscription, mode 
             </label>
             <input
               type="date"
-              value={formData.nextBillingDate}
+              value={formData.nextBillingDate || ''}
               onChange={(e) => setFormData({ ...formData, nextBillingDate: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
@@ -333,7 +333,7 @@ export function SubscriptionModal({ isOpen, onClose, onSave, subscription, mode 
             </label>
             <input
               type="url"
-              value={formData.url}
+              value={formData.url || ''}
               onChange={(e) => setFormData({ ...formData, url: e.target.value })}
               placeholder="https://..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
