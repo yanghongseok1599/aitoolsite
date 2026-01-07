@@ -23,15 +23,15 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
   const { alert: showAlert } = useAlert()
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null)
 
-  // Google 파비콘 서비스 URL을 DuckDuckGo로 변환 (더 나은 에러 처리)
+  // 파비콘 서비스 URL을 Clearbit Logo API로 변환 (404 에러 반환)
   const getActualIconUrl = (iconUrl: string | undefined) => {
     if (!iconUrl) return null
 
-    // Google 파비콘 서비스 URL이면 DuckDuckGo로 변환
-    if (iconUrl.includes('google.com/s2/favicons')) {
+    // Google 또는 DuckDuckGo 파비콘 서비스 URL이면 Clearbit으로 변환
+    if (iconUrl.includes('google.com/s2/favicons') || iconUrl.includes('duckduckgo.com')) {
       try {
         const domain = new URL(url).hostname
-        return `https://icons.duckduckgo.com/ip3/${domain}.ico`
+        return `https://logo.clearbit.com/${domain}`
       } catch {
         return iconUrl
       }

@@ -62,12 +62,12 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
       const domain = urlObj.origin
       const hostname = urlObj.hostname
 
-      // Try multiple favicon sources in order (DuckDuckGo first - returns error if not found)
+      // Try multiple favicon sources in order (Clearbit first - returns 404 if not found)
       const faviconSources = [
+        `https://logo.clearbit.com/${hostname}`,
         `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
         `${domain}/favicon.ico`,
         `${domain}/favicon.png`,
-        `${domain}/apple-touch-icon.png`,
       ]
 
       let iconFound = false
