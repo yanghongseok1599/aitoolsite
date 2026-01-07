@@ -95,9 +95,9 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
   // If it's in DragOverlay, render static version without drag handlers
   if (isDragOverlay) {
     return (
-      <div className="flex flex-col items-center space-y-2 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
+      <div className="flex flex-col items-center space-y-1 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
         {/* Icon */}
-        <div className="w-12 h-12 flex items-center justify-center">
+        <div className="w-10 h-10 flex items-center justify-center">
           {icon && !iconError ? (
             <img
               src={icon}
@@ -130,10 +130,10 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
         onContextMenu={handleContextMenu}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
-        className="group flex flex-col items-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer transform-gpu"
+        className="group flex flex-col items-center space-y-1 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer transform-gpu"
       >
         {/* Icon */}
-        <div className="w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
           {icon && !iconError ? (
             <img
               src={icon}
