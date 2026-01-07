@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { getUserNotes } from '@/lib/firestore'
 
 interface Note {
   id: string
@@ -19,7 +18,7 @@ export function NotesWidget() {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Firestore에서 메모 불러오기
+  // API를 통해 메모 불러오기
   useEffect(() => {
     const loadNotes = async () => {
       if (!session?.user?.email) {
@@ -28,18 +27,15 @@ export function NotesWidget() {
       }
 
       try {
-        const firestoreNotes = await getUserNotes(session.user.email)
-        const formattedNotes = firestoreNotes.map(note => ({
-          id: note.id,
-          title: note.title,
-          content: note.content,
-          createdAt: note.createdAt.toDate().toISOString(),
-          updatedAt: note.updatedAt.toDate().toISOString(),
-          color: note.color,
-        }))
-        setNotes(formattedNotes)
+        const response = await fetch('/api/notes')
+        if (response.ok) {
+          const data = await response.json()
+          setNotes(data.notes || [])
+        } else {
+          console.error('Failed to fetch notes:', response.status)
+        }
       } catch (error) {
-        console.error('Error loading notes from Firestore:', error)
+        console.error('Error loading notes:', error)
       } finally {
         setLoading(false)
       }

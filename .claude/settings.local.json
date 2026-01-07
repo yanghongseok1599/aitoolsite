@@ -43,7 +43,11 @@
       "Bash(node scripts/add-bookmark.js:*)",
       "Bash(npx vercel:*)",
       "Bash(node -e:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(del \"c:\\AI PROJECT\\AI TOOL SITE\\.env.vercel\")",
+      "Bash(rm:*)",
+      "Bash(del /f \"c:\\AI PROJECT\\AI TOOL SITE\\.env.vercel\")",
+      "Bash(printf:*)"
     ],
     "deny": [],
     "ask": []

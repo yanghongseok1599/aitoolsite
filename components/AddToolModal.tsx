@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAlert } from '@/contexts/AlertContext'
 
 interface AddToolModalProps {
@@ -18,6 +18,7 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
   const [iconPreview, setIconPreview] = useState('')
   const [activeTab, setActiveTab] = useState<'auto' | 'upload'>('auto')
   const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { alert: showAlert } = useAlert()
 
   // Update form when initialData changes or modal opens
@@ -185,6 +186,35 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
     }
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showAlert('이미지 파일만 업로드 가능합니다.', { type: 'warning' })
+      return
+    }
+
+    // Check file size (max 500KB)
+    if (file.size > 500 * 1024) {
+      showAlert('파일 크기는 500KB 이하여야 합니다.', { type: 'warning' })
+      return
+    }
+
+    // Convert to Base64
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      setIconPreview(base64)
+      setIconUrl(base64)
+    }
+    reader.onerror = () => {
+      showAlert('파일을 읽는데 실패했습니다.', { type: 'error' })
+    }
+    reader.readAsDataURL(file)
+  }
+
   if (!isOpen) return null
 
   return (
@@ -297,17 +327,50 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    아이콘 이미지 URL을 입력하세요
-                  </p>
+                  {/* File Upload Section */}
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      컴퓨터에서 이미지 파일 선택
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary dark:hover:border-primary bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      파일 선택 (최대 500KB)
+                    </button>
+                  </div>
+
+                  {/* URL Input Section */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">또는 URL 입력</span>
+                    </div>
+                  </div>
+
                   <input
                     type="text"
-                    value={iconUrl}
+                    value={iconUrl.startsWith('data:') ? '' : iconUrl}
                     onChange={(e) => setIconUrl(e.target.value)}
                     onBlur={handleManualIconUrl}
                     placeholder="https://example.com/icon.png"
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
+
+                  {/* Preview */}
                   {iconPreview ? (
                     <div className="flex items-center justify-center py-4">
                       <img

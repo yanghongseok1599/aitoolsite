@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useAlert } from '@/contexts/AlertContext'
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, defaultDropAnimationSideEffects, DragStartEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, pointerWithin, rectIntersection, getFirstCollision, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, defaultDropAnimationSideEffects, DragStartEvent, CollisionDetection } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { DropAnimation } from '@dnd-kit/core'
@@ -25,11 +25,33 @@ import { TodoListWidget } from '@/components/TodoListWidget'
 import { SortableWidget } from '@/components/SortableWidget'
 import { BookmarkCard } from '@/components/BookmarkCard'
 import {
-  getUserSettings,
-  saveUserSettings,
   getAdBannerSettings,
   saveAdBannerSettings,
 } from '@/lib/firestore'
+
+// API-based settings functions (use Admin SDK to bypass Firestore security rules)
+async function fetchUserSettings() {
+  const response = await fetch('/api/settings')
+  if (!response.ok) {
+    console.error('Failed to fetch settings:', response.status)
+    return null
+  }
+  const data = await response.json()
+  return data.settings
+}
+
+async function updateUserSettings(settings: Record<string, any>) {
+  const response = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  if (!response.ok) {
+    console.error('Failed to update settings:', response.status)
+    throw new Error('Failed to update settings')
+  }
+  return response.json()
+}
 
 // 샘플 데이터
 const sampleBookmarks: { [key: string]: Bookmark[] } = {
@@ -786,45 +808,117 @@ export default function Home() {
     loadAdBannerSettings()
   }, [])
 
-  // Load user data from Firebase
+  // Helper function to process and merge bookmark data
+  const processBookmarkData = (firestoreBookmarks: any[], settings: any) => {
+    // Start with sample bookmarks as base
+    const mergedBookmarks: { [key: string]: Bookmark[] } = JSON.parse(JSON.stringify(sampleBookmarks))
+
+    // Add user's saved bookmarks (they may override or add to categories)
+    firestoreBookmarks.forEach((bookmark: any) => {
+      if (!mergedBookmarks[bookmark.category]) {
+        mergedBookmarks[bookmark.category] = []
+      }
+      // Check if bookmark already exists (by id) to avoid duplicates
+      const existingIndex = mergedBookmarks[bookmark.category].findIndex(b => b.id === bookmark.id)
+      if (existingIndex === -1) {
+        mergedBookmarks[bookmark.category].push({
+          id: bookmark.id,
+          name: bookmark.name,
+          url: bookmark.url,
+          icon: bookmark.icon,
+          description: bookmark.description,
+        })
+      }
+    })
+
+    // Determine category order
+    const sampleCategoryOrder = Object.keys(sampleBookmarks)
+    const savedCategoryOrder = settings?.categoryOrder || []
+    const userBookmarkCategories = firestoreBookmarks.map((b: any) => b.category).filter((c: string, i: number, arr: string[]) => arr.indexOf(c) === i)
+
+    // Build merged category order
+    let mergedCategoryOrder: string[] = []
+
+    if (savedCategoryOrder.length > 0) {
+      mergedCategoryOrder = [...savedCategoryOrder]
+      sampleCategoryOrder.forEach(cat => {
+        if (!mergedCategoryOrder.includes(cat)) {
+          mergedCategoryOrder.push(cat)
+        }
+      })
+    } else {
+      mergedCategoryOrder = [...sampleCategoryOrder]
+    }
+
+    userBookmarkCategories.forEach((cat: string) => {
+      if (!mergedCategoryOrder.includes(cat)) {
+        mergedCategoryOrder.push(cat)
+      }
+    })
+
+    // Build final bookmarks object with proper order
+    const finalBookmarks: { [key: string]: Bookmark[] } = {}
+    mergedCategoryOrder.forEach(category => {
+      finalBookmarks[category] = mergedBookmarks[category] || []
+    })
+
+    return { finalBookmarks, mergedCategoryOrder, settings }
+  }
+
+  // Load user data from Firebase with caching
   useEffect(() => {
+    const CACHE_KEY = 'dashboard_cache'
+    const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
     const loadUserData = async () => {
       if (!session?.user?.email) {
         setLoading(false)
         return
       }
 
-      try {
-        const userId = session.user.email
+      const userId = session.user.email
 
-        // Load bookmarks via API
-        const bookmarkResponse = await fetch('/api/bookmarks')
+      // Step 1: Load from localStorage cache immediately (if available)
+      try {
+        const cachedData = localStorage.getItem(`${CACHE_KEY}_${userId}`)
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData)
+          const isExpired = Date.now() - timestamp > CACHE_EXPIRY
+
+          // Show cached data immediately
+          setBookmarks(data.bookmarks)
+          setCategoryOrder(data.categoryOrder)
+          if (data.widgetOrder) setWidgetOrder(data.widgetOrder)
+          if (data.bannerWidgets) setBannerWidgets(data.bannerWidgets)
+          if (data.welcomeTitle) setWelcomeTitle(data.welcomeTitle)
+          if (data.welcomeDescription) setWelcomeDescription(data.welcomeDescription)
+          setLoading(false)
+
+          // If cache is still fresh, skip fetching
+          if (!isExpired) {
+            return
+          }
+        }
+      } catch (e) {
+        // Cache read failed, continue with API fetch
+      }
+
+      try {
+        // Step 2: Fetch bookmarks and settings in PARALLEL
+        const [bookmarkResponse, settings] = await Promise.all([
+          fetch('/api/bookmarks'),
+          fetchUserSettings()
+        ])
+
         const bookmarkData = await bookmarkResponse.json()
         const firestoreBookmarks = bookmarkData.bookmarks || []
-        const bookmarksByCategory: { [key: string]: Bookmark[] } = {}
 
-        firestoreBookmarks.forEach((bookmark: any) => {
-          if (!bookmarksByCategory[bookmark.category]) {
-            bookmarksByCategory[bookmark.category] = []
-          }
-          bookmarksByCategory[bookmark.category].push({
-            id: bookmark.id,
-            name: bookmark.name,
-            url: bookmark.url,
-            icon: bookmark.icon,
-            description: bookmark.description,
-          })
-        })
+        // Process the data
+        const { finalBookmarks, mergedCategoryOrder } = processBookmarkData(firestoreBookmarks, settings)
 
-        // Load user settings
-        const settings = await getUserSettings(userId)
-
-        if (Object.keys(bookmarksByCategory).length > 0) {
-          setBookmarks(bookmarksByCategory)
-          setCategoryOrder(
-            settings?.categoryOrder || Object.keys(bookmarksByCategory)
-          )
-        }
+        // Update state
+        setBookmarks(finalBookmarks)
+        setCategoryOrder(mergedCategoryOrder)
 
         if (settings?.widgetOrder) {
           setWidgetOrder(settings.widgetOrder)
@@ -841,6 +935,24 @@ export default function Home() {
         if (settings?.welcomeDescription) {
           setWelcomeDescription(settings.welcomeDescription)
         }
+
+        // Step 3: Save to localStorage cache
+        try {
+          const cacheData = {
+            data: {
+              bookmarks: finalBookmarks,
+              categoryOrder: mergedCategoryOrder,
+              widgetOrder: settings?.widgetOrder,
+              bannerWidgets: settings?.bannerWidgets,
+              welcomeTitle: settings?.welcomeTitle,
+              welcomeDescription: settings?.welcomeDescription,
+            },
+            timestamp: Date.now()
+          }
+          localStorage.setItem(`${CACHE_KEY}_${userId}`, JSON.stringify(cacheData))
+        } catch (e) {
+          // Cache write failed, ignore
+        }
       } catch (error) {
         console.error('Error loading user data:', error)
       } finally {
@@ -850,6 +962,34 @@ export default function Home() {
 
     loadUserData()
   }, [session])
+
+  // Sync cache whenever data changes (debounced)
+  useEffect(() => {
+    if (!session?.user?.email || loading) return
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const CACHE_KEY = 'dashboard_cache'
+        const userId = session.user.email
+        const cacheData = {
+          data: {
+            bookmarks,
+            categoryOrder,
+            widgetOrder,
+            bannerWidgets,
+            welcomeTitle,
+            welcomeDescription,
+          },
+          timestamp: Date.now()
+        }
+        localStorage.setItem(`${CACHE_KEY}_${userId}`, JSON.stringify(cacheData))
+      } catch (e) {
+        // Cache write failed, ignore
+      }
+    }, 1000) // Debounce 1 second
+
+    return () => clearTimeout(timeoutId)
+  }, [bookmarks, categoryOrder, widgetOrder, bannerWidgets, welcomeTitle, welcomeDescription, session, loading])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -861,6 +1001,37 @@ export default function Home() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
+
+  // Custom collision detection - prioritizes bookmarks for reordering, then category drop zones
+  const customCollisionDetection: CollisionDetection = (args) => {
+    // First, use closestCenter to find nearby elements
+    const closestCollisions = closestCenter(args)
+
+    if (closestCollisions.length > 0) {
+      const closestId = String(closestCollisions[0].id)
+
+      // Check if the closest element is a bookmark (not a widget, category, or drop zone)
+      const isBookmark = Object.values(bookmarks).flat().some(b => b.id === closestId)
+
+      if (isBookmark) {
+        // Return the bookmark for reordering
+        return closestCollisions
+      }
+    }
+
+    // If not dropping on a bookmark, check for category drop zones
+    const pointerCollisions = pointerWithin(args)
+    const categoryDropZone = pointerCollisions.find(
+      collision => String(collision.id).startsWith('category-drop-')
+    )
+
+    if (categoryDropZone) {
+      return [categoryDropZone]
+    }
+
+    // Fall back to closestCenter for widgets and categories
+    return closestCollisions
+  }
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -897,6 +1068,9 @@ export default function Home() {
     const { active, over } = event
     setActiveId(null)
 
+    // Debug logging
+    console.log('DragEnd - active:', active.id, 'over:', over?.id)
+
     if (over && active.id !== over.id) {
       const activeId = active.id as string
       const overId = over.id as string
@@ -908,7 +1082,7 @@ export default function Home() {
 
         // Save to Firebase
         if (session?.user?.email) {
-          await saveUserSettings(session.user.email, { bannerWidgets: newOrder })
+          await updateUserSettings( { bannerWidgets: newOrder })
         }
       } else if (widgetOrder.includes(activeId) && widgetOrder.includes(overId)) {
         // Check if dragging main widgets
@@ -917,7 +1091,7 @@ export default function Home() {
 
         // Save to Firebase
         if (session?.user?.email) {
-          await saveUserSettings(session.user.email, { widgetOrder: newOrder })
+          await updateUserSettings( { widgetOrder: newOrder })
         }
       } else if (categoryOrder.includes(activeId) && categoryOrder.includes(overId)) {
         // Dragging categories
@@ -926,14 +1100,67 @@ export default function Home() {
 
         // Save to Firebase
         if (session?.user?.email) {
-          await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+          await updateUserSettings( { categoryOrder: newOrder })
+        }
+      } else if (overId.startsWith('category-drop-')) {
+        // Dragging bookmarks to a category drop zone
+        const targetCategory = overId.replace('category-drop-', '')
+        let sourceCategory = ''
+
+        // Find the source category of the bookmark
+        for (const [category, items] of Object.entries(bookmarks)) {
+          if (items.some(b => b.id === activeId)) {
+            sourceCategory = category
+            break
+          }
+        }
+
+        if (sourceCategory && sourceCategory !== targetCategory) {
+          // Moving bookmark to a different category
+          const sourceBookmarks = [...bookmarks[sourceCategory]]
+          const targetBookmarks = [...(bookmarks[targetCategory] || [])]
+
+          const movedBookmark = sourceBookmarks.find(b => b.id === activeId)
+          if (movedBookmark) {
+            // Remove from source
+            const newSourceBookmarks = sourceBookmarks.filter(b => b.id !== activeId)
+
+            // Add to target at the end
+            const newTargetBookmarks = [...targetBookmarks, movedBookmark]
+
+            // Update state
+            setBookmarks(prev => ({
+              ...prev,
+              [sourceCategory]: newSourceBookmarks,
+              [targetCategory]: newTargetBookmarks
+            }))
+
+            // Update in Firebase via API
+            if (session?.user?.email) {
+              try {
+                await fetch('/api/bookmarks', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    id: activeId,
+                    category: targetCategory,
+                    name: movedBookmark.name,
+                    url: movedBookmark.url,
+                    icon: movedBookmark.icon,
+                  })
+                })
+              } catch (error) {
+                console.error('Failed to update bookmark:', error)
+              }
+            }
+          }
         }
       } else {
-        // Dragging bookmarks - find which category the bookmark belongs to
+        // Dragging bookmarks - check if reordering within same category or moving to different category
         let sourceCategory = ''
         let targetCategory = ''
 
-        // Find the source category
+        // Find source and target categories
         for (const [category, items] of Object.entries(bookmarks)) {
           if (items.some(b => b.id === activeId)) {
             sourceCategory = category
@@ -943,9 +1170,23 @@ export default function Home() {
           }
         }
 
-        if (sourceCategory) {
-          if (targetCategory && sourceCategory !== targetCategory) {
-            // Moving bookmark to a different category
+        if (sourceCategory && targetCategory) {
+          if (sourceCategory === targetCategory) {
+            // Reordering within the same category
+            const categoryBookmarks = [...bookmarks[sourceCategory]]
+            const oldIndex = categoryBookmarks.findIndex(b => b.id === activeId)
+            const newIndex = categoryBookmarks.findIndex(b => b.id === overId)
+
+            if (oldIndex >= 0 && newIndex >= 0) {
+              const reorderedBookmarks = arrayMove(categoryBookmarks, oldIndex, newIndex)
+
+              setBookmarks(prev => ({
+                ...prev,
+                [sourceCategory]: reorderedBookmarks
+              }))
+            }
+          } else {
+            // Moving bookmark to a different category (dropping on another bookmark)
             const sourceBookmarks = [...bookmarks[sourceCategory]]
             const targetBookmarks = [...bookmarks[targetCategory]]
 
@@ -954,7 +1195,7 @@ export default function Home() {
               // Remove from source
               const newSourceBookmarks = sourceBookmarks.filter(b => b.id !== activeId)
 
-              // Add to target at the position of overId
+              // Insert at the position of the target bookmark
               const targetIndex = targetBookmarks.findIndex(b => b.id === overId)
               const newTargetBookmarks = [...targetBookmarks]
               newTargetBookmarks.splice(targetIndex, 0, movedBookmark)
@@ -985,18 +1226,6 @@ export default function Home() {
                 }
               }
             }
-          } else if (sourceCategory === targetCategory) {
-            // Reordering within the same category
-            const categoryBookmarks = [...bookmarks[sourceCategory]]
-            const oldIndex = categoryBookmarks.findIndex(b => b.id === activeId)
-            const newIndex = categoryBookmarks.findIndex(b => b.id === overId)
-
-            const reorderedBookmarks = arrayMove(categoryBookmarks, oldIndex, newIndex)
-
-            setBookmarks(prev => ({
-              ...prev,
-              [sourceCategory]: reorderedBookmarks
-            }))
           }
         }
       }
@@ -1026,7 +1255,7 @@ export default function Home() {
 
     // Save to Firebase
     if (session?.user?.email) {
-      await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+      await updateUserSettings( { categoryOrder: newOrder })
     }
   }
 
@@ -1249,7 +1478,7 @@ export default function Home() {
 
     // Save updated category order to Firebase
     if (session?.user?.email) {
-      await saveUserSettings(session.user.email, { categoryOrder: newOrder })
+      await updateUserSettings( { categoryOrder: newOrder })
     }
   }
 
@@ -1261,7 +1490,7 @@ export default function Home() {
 
       // Save to Firebase
       if (session?.user?.email) {
-        await saveUserSettings(session.user.email, { bannerWidgets: newBannerWidgets })
+        await updateUserSettings( { bannerWidgets: newBannerWidgets })
       }
     } else {
       // Otherwise add to widget order
@@ -1270,7 +1499,7 @@ export default function Home() {
 
       // Save to Firebase
       if (session?.user?.email) {
-        await saveUserSettings(session.user.email, { widgetOrder: newOrder })
+        await updateUserSettings( { widgetOrder: newOrder })
       }
     }
   }
@@ -1287,7 +1516,7 @@ export default function Home() {
 
       // Save to Firebase
       if (session?.user?.email) {
-        await saveUserSettings(session.user.email, { welcomeTitle: tempTitle })
+        await updateUserSettings( { welcomeTitle: tempTitle })
       }
     }
   }
@@ -1309,7 +1538,7 @@ export default function Home() {
 
       // Save to Firebase
       if (session?.user?.email) {
-        await saveUserSettings(session.user.email, { welcomeDescription: tempDescription })
+        await updateUserSettings( { welcomeDescription: tempDescription })
       }
     }
   }
@@ -1325,7 +1554,7 @@ export default function Home() {
 
     // Save to Firebase
     if (session?.user?.email) {
-      await saveUserSettings(session.user.email, { widgetOrder: newOrder })
+      await updateUserSettings( { widgetOrder: newOrder })
     }
   }
 
@@ -1335,7 +1564,7 @@ export default function Home() {
 
     // Save to Firebase
     if (session?.user?.email) {
-      await saveUserSettings(session.user.email, { bannerWidgets: newBannerWidgets })
+      await updateUserSettings( { bannerWidgets: newBannerWidgets })
     }
   }
 
@@ -1351,7 +1580,7 @@ export default function Home() {
 
       // Save to Firebase
       if (session?.user?.email) {
-        await saveUserSettings(session.user.email, {
+        await updateUserSettings( {
           bannerWidgets: newBannerWidgets,
           widgetOrder: newOrder
         })
@@ -1370,7 +1599,7 @@ export default function Home() {
 
     // Save to Firebase
     if (session?.user?.email) {
-      await saveUserSettings(session.user.email, {
+      await updateUserSettings( {
         bannerWidgets: newBannerWidgets,
         widgetOrder: newOrder
       })
@@ -1424,10 +1653,10 @@ export default function Home() {
           </aside>
         )}
 
-        <main className="max-w-full w-full px-4 sm:px-6 lg:px-20 xl:px-32 py-8">
+        <main className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={customCollisionDetection}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}

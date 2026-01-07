@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { useAlert } from '@/contexts/AlertContext'
-import { getUserNotes, addNote, updateNote, deleteNote } from '@/lib/firestore'
 
 interface Note {
   id: string
@@ -29,7 +28,7 @@ export default function NotesPage() {
   const [editContent, setEditContent] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Firestore에서 메모 불러오기
+  // API를 통해 메모 불러오기
   useEffect(() => {
     const loadNotes = async () => {
       if (status === 'loading') return
@@ -40,19 +39,15 @@ export default function NotesPage() {
       }
 
       try {
-        const firestoreNotes = await getUserNotes(session.user.email)
-        const formattedNotes = firestoreNotes.map(note => ({
-          id: note.id,
-          title: note.title,
-          content: note.content,
-          createdAt: note.createdAt.toDate().toISOString(),
-          updatedAt: note.updatedAt.toDate().toISOString(),
-          color: note.color,
-          isPinned: note.isPinned,
-        }))
-        setNotes(formattedNotes)
+        const response = await fetch('/api/notes')
+        if (response.ok) {
+          const data = await response.json()
+          setNotes(data.notes || [])
+        } else {
+          console.error('Failed to fetch notes:', response.status)
+        }
       } catch (error) {
-        console.error('Error loading notes from Firestore:', error)
+        console.error('Error loading notes:', error)
       } finally {
         setLoading(false)
       }
@@ -120,36 +115,50 @@ export default function NotesPage() {
 
     try {
       if (selectedNote) {
-        // 기존 노트 수정
-        await updateNote(selectedNote.id, {
-          title: editTitle,
-          content: editContent,
+        // 기존 노트 수정 via API
+        const response = await fetch('/api/notes', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedNote.id,
+            title: editTitle,
+            content: editContent,
+          }),
         })
-        setNotes(prev => prev.map(note =>
-          note.id === selectedNote.id
-            ? { ...note, title: editTitle, content: editContent, updatedAt: new Date().toISOString() }
-            : note
-        ))
-        setSelectedNote({ ...selectedNote, title: editTitle, content: editContent })
-      } else {
-        // 새 노트 생성
-        const docRef = await addNote(session.user.email, {
-          title: editTitle || '제목 없음',
-          content: editContent,
-          color: 'yellow',
-          isPinned: false
-        })
-        const newNote: Note = {
-          id: docRef.id,
-          title: editTitle || '제목 없음',
-          content: editContent,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          color: 'yellow',
-          isPinned: false
+
+        if (response.ok) {
+          setNotes(prev => prev.map(note =>
+            note.id === selectedNote.id
+              ? { ...note, title: editTitle, content: editContent, updatedAt: new Date().toISOString() }
+              : note
+          ))
+          setSelectedNote({ ...selectedNote, title: editTitle, content: editContent })
         }
-        setNotes(prev => [newNote, ...prev])
-        setSelectedNote(newNote)
+      } else {
+        // 새 노트 생성 via API
+        const response = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: editTitle || '제목 없음',
+            content: editContent,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const newNote: Note = {
+            id: data.id,
+            title: editTitle || '제목 없음',
+            content: editContent,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            color: 'yellow',
+            isPinned: false
+          }
+          setNotes(prev => [newNote, ...prev])
+          setSelectedNote(newNote)
+        }
       }
     } catch (error) {
       console.error('Error saving note:', error)
@@ -161,11 +170,16 @@ export default function NotesPage() {
     const confirmed = await showConfirm('이 메모를 삭제하시겠습니까?')
     if (confirmed) {
       try {
-        await deleteNote(noteId)
-        const updatedNotes = notes.filter(note => note.id !== noteId)
-        setNotes(updatedNotes)
-        if (selectedNote?.id === noteId) {
-          setSelectedNote(null)
+        const response = await fetch(`/api/notes?id=${noteId}`, {
+          method: 'DELETE',
+        })
+
+        if (response.ok) {
+          const updatedNotes = notes.filter(note => note.id !== noteId)
+          setNotes(updatedNotes)
+          if (selectedNote?.id === noteId) {
+            setSelectedNote(null)
+          }
         }
       } catch (error) {
         console.error('Error deleting note:', error)
@@ -178,10 +192,20 @@ export default function NotesPage() {
     if (!note) return
 
     try {
-      await updateNote(noteId, { isPinned: !note.isPinned })
-      setNotes(prev => prev.map(n =>
-        n.id === noteId ? { ...n, isPinned: !n.isPinned } : n
-      ))
+      const response = await fetch('/api/notes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: noteId,
+          isPinned: !note.isPinned,
+        }),
+      })
+
+      if (response.ok) {
+        setNotes(prev => prev.map(n =>
+          n.id === noteId ? { ...n, isPinned: !n.isPinned } : n
+        ))
+      }
     } catch (error) {
       console.error('Error toggling pin:', error)
     }

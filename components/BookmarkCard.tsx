@@ -19,6 +19,7 @@ interface BookmarkCardProps {
 
 export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOverlay = false }: BookmarkCardProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [iconError, setIconError] = useState(false)
   const { alert: showAlert } = useAlert()
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null)
 
@@ -39,6 +40,7 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : 'auto',
     willChange: isDragging ? 'transform' : 'auto',
+    touchAction: 'none',
   } as React.CSSProperties
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -96,8 +98,13 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
       <div className="flex flex-col items-center space-y-2 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
         {/* Icon */}
         <div className="w-12 h-12 flex items-center justify-center">
-          {icon ? (
-            <img src={icon} alt={name} className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700" />
+          {icon && !iconError ? (
+            <img
+              src={icon}
+              alt={name}
+              className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
+              onError={() => setIconError(true)}
+            />
           ) : (
             <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-base font-bold dark:border-2 dark:border-gray-700`}>
               {getInitial(name)}
@@ -127,8 +134,13 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
       >
         {/* Icon */}
         <div className="w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">
-          {icon ? (
-            <img src={icon} alt={name} className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700" />
+          {icon && !iconError ? (
+            <img
+              src={icon}
+              alt={name}
+              className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
+              onError={() => setIconError(true)}
+            />
           ) : (
             <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-base font-bold dark:border-2 dark:border-gray-700`}>
               {getInitial(name)}

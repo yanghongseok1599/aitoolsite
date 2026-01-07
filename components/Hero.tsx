@@ -1,6 +1,20 @@
 'use client'
 
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+
 export function Hero() {
+  const { data: session } = useSession()
+  const router = useRouter()
+
+  const handleStartClick = () => {
+    if (session) {
+      router.push('/dashboard')
+    } else {
+      router.push('/signup')
+    }
+  }
+
   return (
     <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
       {/* Background Gradient */}
@@ -37,12 +51,12 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <a
-              href="/signup"
-              className="w-full sm:w-auto px-8 py-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-center"
+            <button
+              onClick={handleStartClick}
+              className="w-full sm:w-auto px-8 py-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-center cursor-pointer"
             >
-              무료로 시작하기
-            </a>
+              {session ? 'MY STUDIO 시작하기' : '무료로 시작하기'}
+            </button>
             <a
               href="/dashboard"
               className="w-full sm:w-auto px-8 py-4 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-lg border border-gray-200 dark:border-gray-700 transition-all text-center"

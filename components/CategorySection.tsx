@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { BookmarkCard } from './BookmarkCard'
 
@@ -27,14 +28,20 @@ interface CategorySectionProps {
 export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBookmark, onDeleteBookmark, onEditCategory, onDeleteCategory }: CategorySectionProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
+  // For category sorting (drag handle)
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setSortableRef,
     transform,
     transition,
     isDragging,
   } = useSortable({ id })
+
+  // For accepting bookmark drops into this category (separate from sortable)
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `category-drop-${id}`,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -45,7 +52,11 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
   } as React.CSSProperties
 
   return (
-    <section ref={setNodeRef} style={style} className="mb-8 transform-gpu">
+    <section
+      ref={setSortableRef}
+      style={style}
+      className="mb-8 transform-gpu rounded-lg"
+    >
       {/* Category Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2 group flex-1">
@@ -110,47 +121,69 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
         </div>
       </div>
 
-      {/* Bookmarks Grid */}
+      {/* Droppable Bookmarks Area */}
       {isExpanded && (
-        <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {bookmarks.map((bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                id={bookmark.id}
-                name={bookmark.name}
-                url={bookmark.url}
-                icon={bookmark.icon}
-                description={bookmark.description}
-                onEdit={() => onEditBookmark?.(bookmark.id)}
-                onDelete={() => onDeleteBookmark?.(bookmark.id)}
-              />
-            ))}
+        <div
+          ref={setDroppableRef}
+          className={`min-h-[100px] rounded-lg transition-all duration-200 ${
+            isOver ? 'bg-primary/10 ring-2 ring-primary/50 ring-dashed p-2' : ''
+          }`}
+        >
+          {bookmarks.length > 0 ? (
+            <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                {bookmarks.map((bookmark) => (
+                  <BookmarkCard
+                    key={bookmark.id}
+                    id={bookmark.id}
+                    name={bookmark.name}
+                    url={bookmark.url}
+                    icon={bookmark.icon}
+                    description={bookmark.description}
+                    onEdit={() => onEditBookmark?.(bookmark.id)}
+                    onDelete={() => onDeleteBookmark?.(bookmark.id)}
+                  />
+                ))}
 
-            {/* Add New Card */}
-            {onAddBookmark && (
-              <button
-                onClick={onAddBookmark}
-                className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Add New Card */}
+                {onAddBookmark && (
+                  <button
+                    onClick={onAddBookmark}
+                    className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
+                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
+                      추가
+                    </span>
+                  </button>
+                )}
+              </div>
+            </SortableContext>
+          ) : (
+            /* Empty State */
+            <div className={`p-8 border-2 border-dashed rounded-lg text-center transition-colors ${
+              isOver ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-700'
+            }`}>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                {isOver ? '여기에 북마크를 놓으세요' : '북마크를 이 카테고리로 드래그하세요'}
+              </p>
+              {onAddBookmark && (
+                <button
+                  onClick={onAddBookmark}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                </div>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
-                  추가
-                </span>
-              </button>
-            )}
-          </div>
-        </SortableContext>
-      )}
-
-      {/* Empty State */}
-      {isExpanded && bookmarks.length === 0 && (
-        <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-          <p className="text-sm">이 카테고리에 아직 도구가 없습니다</p>
+                  북마크 추가
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>

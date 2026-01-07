@@ -32,9 +32,9 @@ function getAdminApp(): App {
     return adminApp
   }
 
-  // Fallback to environment variables
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+  // Fallback to environment variables (trim to remove any trailing newlines)
+  const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)?.trim()
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim()
 
   // Support both base64 encoded and plain private key
   let privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
