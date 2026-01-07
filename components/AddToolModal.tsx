@@ -62,9 +62,8 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
       const domain = urlObj.origin
       const hostname = urlObj.hostname
 
-      // Try multiple favicon sources in order
+      // Try multiple favicon sources in order (DuckDuckGo first - returns error if not found)
       const faviconSources = [
-        `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
         `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
         `${domain}/favicon.ico`,
         `${domain}/favicon.png`,

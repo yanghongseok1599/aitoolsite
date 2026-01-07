@@ -23,6 +23,24 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
   const { alert: showAlert } = useAlert()
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null)
 
+  // Google 파비콘 서비스 URL을 DuckDuckGo로 변환 (더 나은 에러 처리)
+  const getActualIconUrl = (iconUrl: string | undefined) => {
+    if (!iconUrl) return null
+
+    // Google 파비콘 서비스 URL이면 DuckDuckGo로 변환
+    if (iconUrl.includes('google.com/s2/favicons')) {
+      try {
+        const domain = new URL(url).hostname
+        return `https://icons.duckduckgo.com/ip3/${domain}.ico`
+      } catch {
+        return iconUrl
+      }
+    }
+    return iconUrl
+  }
+
+  const actualIconUrl = getActualIconUrl(icon)
+
   const {
     attributes,
     listeners,
@@ -98,9 +116,9 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
       <div className="flex flex-col items-center space-y-1 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
         {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center">
-          {icon && !iconError ? (
+          {actualIconUrl && !iconError ? (
             <img
-              src={icon}
+              src={actualIconUrl}
               alt={name}
               className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
               onError={() => setIconError(true)}
@@ -134,9 +152,9 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
       >
         {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
-          {icon && !iconError ? (
+          {actualIconUrl && !iconError ? (
             <img
-              src={icon}
+              src={actualIconUrl}
               alt={name}
               className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
               onError={() => setIconError(true)}
