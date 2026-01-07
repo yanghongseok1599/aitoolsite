@@ -15,7 +15,7 @@ interface Subscription {
   url: string
   autoRenew: boolean
   notes: string
-  status?: string
+  status?: 'active' | 'cancelled' | 'expired'
 }
 
 interface SubscriptionModalProps {
