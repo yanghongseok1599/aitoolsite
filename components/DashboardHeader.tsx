@@ -26,10 +26,6 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
         { name: '메모 & 노트', href: '/notes' },
         { name: 'AI 사용 통계', href: '/analytics' },
         { name: 'AI 구독 관리', href: '/subscription' },
-        { name: '목표 & 달성률', href: '/goals' },
-        { name: 'AI 도구 추천', href: '/recommendations' },
-        { name: '학습 리소스', href: '/learning' },
-        { name: '템플릿 모음', href: '/templates' },
       ]
     },
     { name: '요금제', href: '/products' }
