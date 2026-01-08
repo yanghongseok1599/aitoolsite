@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { BookmarkContextMenu } from './BookmarkContextMenu'
@@ -22,24 +22,6 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
   const [iconError, setIconError] = useState(false)
   const { alert: showAlert } = useAlert()
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null)
-
-  // 파비콘 서비스 URL을 Clearbit Logo API로 변환 (404 에러 반환)
-  const getActualIconUrl = (iconUrl: string | undefined) => {
-    if (!iconUrl) return null
-
-    // Google 또는 DuckDuckGo 파비콘 서비스 URL이면 Clearbit으로 변환
-    if (iconUrl.includes('google.com/s2/favicons') || iconUrl.includes('duckduckgo.com')) {
-      try {
-        const domain = new URL(url).hostname
-        return `https://logo.clearbit.com/${domain}`
-      } catch {
-        return iconUrl
-      }
-    }
-    return iconUrl
-  }
-
-  const actualIconUrl = getActualIconUrl(icon)
 
   const {
     attributes,
@@ -76,7 +58,6 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
     if (e.button === 0 && mouseDownPos.current && !isDragging) {
       const dx = Math.abs(e.clientX - mouseDownPos.current.x)
       const dy = Math.abs(e.clientY - mouseDownPos.current.y)
-      // 마우스가 5px 이내로만 움직였으면 클릭으로 간주
       if (dx < 5 && dy < 5) {
         window.open(url, '_blank', 'noopener,noreferrer')
       }
@@ -84,7 +65,6 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
     mouseDownPos.current = null
   }
 
-  // Generate a consistent color based on name
   const getInitialColor = (name: string) => {
     const colors = [
       'bg-red-500',
@@ -98,11 +78,9 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
       'bg-teal-500',
       'bg-cyan-500',
     ]
-
     const hash = name.split('').reduce((acc, char) => {
       return char.charCodeAt(0) + ((acc << 5) - acc)
     }, 0)
-
     return colors[Math.abs(hash) % colors.length]
   }
 
@@ -110,27 +88,52 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
     return name.trim().charAt(0).toUpperCase() || '?'
   }
 
-  // If it's in DragOverlay, render static version without drag handlers
+  // Google 파비콘 서비스 URL인 경우 서버에서 placeholder 체크
+  useEffect(() => {
+    if (!icon) return
+
+    const isGoogleFavicon = icon.includes('google.com/s2/favicons') || icon.includes('gstatic.com')
+    if (!isGoogleFavicon) return
+
+    const checkFavicon = async () => {
+      try {
+        const res = await fetch(`/api/check-favicon?url=${encodeURIComponent(icon)}`)
+        const data = await res.json()
+        if (data.isPlaceholder) {
+          setIconError(true)
+        }
+      } catch {
+        // 에러 시 그냥 표시
+      }
+    }
+
+    checkFavicon()
+  }, [icon])
+
+  const renderIcon = () => {
+    if (icon && !iconError) {
+      return (
+        <img
+          src={icon}
+          alt={name}
+          className="w-full h-full object-contain rounded-full"
+          onError={() => setIconError(true)}
+        />
+      )
+    }
+    return (
+      <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-base font-bold`}>
+        {getInitial(name)}
+      </div>
+    )
+  }
+
   if (isDragOverlay) {
     return (
       <div className="flex flex-col items-center space-y-1 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-lg">
-        {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center">
-          {actualIconUrl && !iconError ? (
-            <img
-              src={actualIconUrl}
-              alt={name}
-              className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
-              onError={() => setIconError(true)}
-            />
-          ) : (
-            <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-base font-bold dark:border-2 dark:border-gray-700`}>
-              {getInitial(name)}
-            </div>
-          )}
+          {renderIcon()}
         </div>
-
-        {/* Name */}
         <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center w-full break-words leading-tight">
           {name}
         </span>
@@ -150,29 +153,14 @@ export function BookmarkCard({ id, name, url, icon, onEdit, onDelete, isDragOver
         onMouseUp={handleMouseUp}
         className="group flex flex-col items-center space-y-1 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer transform-gpu"
       >
-        {/* Icon */}
         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
-          {actualIconUrl && !iconError ? (
-            <img
-              src={actualIconUrl}
-              alt={name}
-              className="w-full h-full object-contain rounded-full dark:border-2 dark:border-gray-700"
-              onError={() => setIconError(true)}
-            />
-          ) : (
-            <div className={`w-full h-full rounded-full ${getInitialColor(name)} flex items-center justify-center text-white text-base font-bold dark:border-2 dark:border-gray-700`}>
-              {getInitial(name)}
-            </div>
-          )}
+          {renderIcon()}
         </div>
-
-        {/* Name */}
         <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 text-center w-full break-words group-hover:text-primary transition-colors leading-tight">
           {name}
         </span>
       </div>
 
-      {/* Context Menu */}
       {contextMenu && (
         <BookmarkContextMenu
           isOpen={!!contextMenu}
