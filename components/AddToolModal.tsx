@@ -62,12 +62,11 @@ export function AddToolModal({ isOpen, onClose, onAdd, categoryName, initialData
       const domain = urlObj.origin
       const hostname = urlObj.hostname
 
-      // Try multiple favicon sources in order (Clearbit first - returns 404 if not found)
+      // 직접 사이트 favicon만 시도 (외부 서비스는 기본 아이콘 문제)
       const faviconSources = [
-        `https://logo.clearbit.com/${hostname}`,
-        `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
         `${domain}/favicon.ico`,
         `${domain}/favicon.png`,
+        `${domain}/apple-touch-icon.png`,
       ]
 
       let iconFound = false

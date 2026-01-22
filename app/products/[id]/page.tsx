@@ -2,15 +2,16 @@
 
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { TossPaymentButton } from '@/components/TossPaymentButton'
-import { useRouter, useParams } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface ProductDetail {
   id: string
   name: string
   description: string
   price: number
-  originalPrice?: number
+  yearlyPrice: number
   features: string[]
   detailedFeatures: {
     category: string
@@ -21,45 +22,63 @@ interface ProductDetail {
     value: string
   }[]
   popular?: boolean
-  recommended?: boolean
 }
 
 export default function ProductDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
+  const { data: session } = useSession()
   const productId = params?.id as string
 
+  const billingParam = searchParams?.get('billing')
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly')
 
+  useEffect(() => {
+    if (billingParam === 'yearly') {
+      setSelectedPeriod('yearly')
+    }
+  }, [billingParam])
+
   const products: Record<string, ProductDetail> = {
-    basic: {
-      id: 'basic',
-      name: '기본형',
-      description: '개인 사용자를 위한 필수 기능을 제공하는 기본 플랜입니다. AI 도구 북마크 관리를 시작하기에 적합합니다.',
+    free: {
+      id: 'free',
+      name: '무료',
+      description: '가볍게 AI 도구를 정리하고 싶은 개인 사용자를 위한 기본 플랜입니다.',
       price: 0,
+      yearlyPrice: 0,
       features: [
-        '북마크 20개 저장',
-        '카테고리 5개',
-        '기본 검색 기능',
-        '다크 모드 지원',
-        '모바일 앱 접근'
+        'AI 도구 북마크 30개',
+        '카테고리 3개',
+        '메모 10개',
+        '구독 관리 5개',
+        '기본 검색',
+        '다크 모드'
       ],
       detailedFeatures: [
         {
           category: '북마크 관리',
           items: [
-            '최대 20개 AI 도구 북마크 저장',
-            '5개 카테고리 생성 및 관리',
+            '최대 30개 AI 도구 북마크 저장',
+            '3개 카테고리 생성 및 관리',
             '북마크 제목 및 URL 편집',
-            '기본 아이콘 자동 감지'
+            '파비콘 자동 감지'
           ]
         },
         {
-          category: '검색 및 필터',
+          category: '메모 기능',
           items: [
-            '키워드 기반 기본 검색',
-            '카테고리별 필터링',
-            '최근 추가 순 정렬'
+            '최대 10개 메모 작성',
+            '간단한 텍스트 메모',
+            '메모 검색'
+          ]
+        },
+        {
+          category: '구독 관리',
+          items: [
+            '최대 5개 구독 서비스 등록',
+            '월/연간 비용 계산',
+            '다음 결제일 알림'
           ]
         },
         {
@@ -67,33 +86,37 @@ export default function ProductDetailPage() {
           items: [
             '다크 모드 지원',
             '반응형 디자인',
-            '모바일 웹 접근',
-            '기본 사용자 지원'
+            '모바일 웹 접근'
           ]
         }
       ],
       specifications: [
-        { label: '북마크 저장', value: '최대 20개' },
-        { label: '카테고리', value: '최대 5개' },
-        { label: '저장 용량', value: '10MB' },
-        { label: '동시 접속 기기', value: '3대' },
-        { label: '고객 지원', value: '이메일 지원' },
-        { label: '데이터 백업', value: '주 1회' }
+        { label: 'AI 도구 북마크', value: '최대 30개' },
+        { label: '카테고리', value: '최대 3개' },
+        { label: '메모', value: '최대 10개' },
+        { label: '구독 관리', value: '최대 5개' },
+        { label: 'Google 캘린더 연동', value: '-' },
+        { label: 'Gmail 구독 스캔', value: '-' },
+        { label: '데이터 내보내기', value: '-' },
+        { label: '고객 지원', value: '커뮤니티' }
       ]
     },
-    premium: {
-      id: 'premium',
-      name: '프리미엄',
-      description: '전문가와 파워유저를 위한 고급 기능을 제공합니다. 무제한 북마크와 고급 검색으로 생산성을 극대화하세요.',
-      price: 100,
-      originalPrice: 200,
+    pro: {
+      id: 'pro',
+      name: '프로',
+      description: 'AI 도구를 본격적으로 활용하는 파워 유저를 위한 프리미엄 플랜입니다. 무제한 저장과 고급 기능으로 생산성을 극대화하세요.',
+      price: 4900,
+      yearlyPrice: 49000,
       features: [
-        '무제한 북마크',
+        '무제한 AI 도구 북마크',
         '무제한 카테고리',
+        '무제한 메모',
+        '무제한 구독 관리',
+        'Google 캘린더 연동',
+        'Gmail 구독 스캔',
         '고급 검색 및 필터',
-        '팀 협업 기능',
-        '우선 고객 지원',
-        '데이터 내보내기'
+        '데이터 내보내기',
+        '우선 이메일 지원'
       ],
       detailedFeatures: [
         {
@@ -102,134 +125,66 @@ export default function ProductDetailPage() {
             '무제한 AI 도구 북마크 저장',
             '무제한 카테고리 생성',
             '드래그 앤 드롭으로 순서 변경',
-            '커스텀 아이콘 업로드',
             '북마크 태그 기능',
-            '즐겨찾기 표시'
+            '즐겨찾기 표시',
+            '고급 검색 및 필터'
           ]
         },
         {
-          category: '검색 및 필터',
+          category: '메모 기능',
           items: [
-            '고급 키워드 검색',
-            '다중 필터 조합',
-            '태그 기반 검색',
-            '날짜별 정렬',
-            '사용 빈도 추적',
-            '검색 기록 저장'
+            '무제한 메모 작성',
+            '리치 텍스트 편집',
+            '메모 폴더 관리',
+            '메모 검색 및 필터'
           ]
         },
         {
-          category: '협업 기능',
+          category: '구독 관리',
           items: [
-            '팀원 초대 (최대 5명)',
-            '북마크 공유',
-            '댓글 및 메모',
-            '변경 이력 추적'
+            '무제한 구독 서비스 등록',
+            'Gmail 자동 스캔으로 구독 찾기',
+            '월/연간 비용 분석',
+            '카테고리별 비용 리포트',
+            '결제일 알림'
           ]
         },
         {
-          category: '고급 기능',
+          category: 'Google 연동',
+          items: [
+            'Google 캘린더 일정 연동',
+            '대시보드에서 일정 확인',
+            'Gmail 구독 내역 스캔'
+          ]
+        },
+        {
+          category: '데이터 관리',
           items: [
             'CSV/JSON 데이터 내보내기',
-            'API 액세스',
-            '브라우저 확장 프로그램',
-            '우선 고객 지원 (24시간 이내 응답)',
-            '일일 자동 백업'
+            '북마크 일괄 가져오기',
+            '데이터 백업'
+          ]
+        },
+        {
+          category: '지원',
+          items: [
+            '우선 이메일 지원',
+            '48시간 내 응답 보장',
+            '신규 기능 우선 액세스'
           ]
         }
       ],
       specifications: [
-        { label: '북마크 저장', value: '무제한' },
+        { label: 'AI 도구 북마크', value: '무제한' },
         { label: '카테고리', value: '무제한' },
-        { label: '저장 용량', value: '100GB' },
-        { label: '동시 접속 기기', value: '무제한' },
-        { label: '팀 멤버', value: '최대 5명' },
-        { label: '고객 지원', value: '우선 지원 (24시간 내)' },
-        { label: '데이터 백업', value: '일 1회 자동' },
-        { label: 'API 액세스', value: '포함' }
+        { label: '메모', value: '무제한' },
+        { label: '구독 관리', value: '무제한' },
+        { label: 'Google 캘린더 연동', value: '포함' },
+        { label: 'Gmail 구독 스캔', value: '포함' },
+        { label: '데이터 내보내기', value: '포함' },
+        { label: '고객 지원', value: '우선 이메일 (48시간 내)' }
       ],
       popular: true
-    },
-    enterprise: {
-      id: 'enterprise',
-      name: '엔터프라이즈',
-      description: '대규모 조직을 위한 완벽한 맞춤형 솔루션입니다. 전담 지원팀과 고급 보안 기능으로 안심하고 사용하세요.',
-      price: 49900,
-      features: [
-        '프리미엄 모든 기능',
-        '전담 계정 관리자',
-        '맞춤형 통합 지원',
-        '보안 강화 옵션',
-        '온프레미스 배포',
-        'SLA 보장',
-        '교육 및 온보딩'
-      ],
-      detailedFeatures: [
-        {
-          category: '프리미엄 기능 포함',
-          items: [
-            '프리미엄 플랜의 모든 기능',
-            '무제한 팀 멤버',
-            '무제한 저장 용량'
-          ]
-        },
-        {
-          category: '엔터프라이즈 전용',
-          items: [
-            '전담 계정 관리자 배정',
-            '맞춤형 온보딩 및 교육',
-            '정기 비즈니스 리뷰',
-            '우선 기능 요청 처리',
-            '베타 기능 우선 액세스'
-          ]
-        },
-        {
-          category: '보안 및 규정 준수',
-          items: [
-            'SSO (Single Sign-On) 통합',
-            'SAML 2.0 지원',
-            '고급 권한 관리',
-            '감사 로그',
-            'GDPR 및 ISO 27001 준수',
-            '데이터 암호화 (전송 및 저장)'
-          ]
-        },
-        {
-          category: '통합 및 배포',
-          items: [
-            'API 무제한 사용',
-            '맞춤형 통합 개발',
-            '온프레미스 배포 옵션',
-            '전용 서버 호스팅',
-            'Webhook 지원',
-            'Slack/Teams 통합'
-          ]
-        },
-        {
-          category: '지원 및 SLA',
-          items: [
-            '24/7 전화 및 이메일 지원',
-            '99.9% 가동 시간 SLA 보장',
-            '1시간 이내 응답 시간',
-            '월별 성능 리포트',
-            '재해 복구 계획'
-          ]
-        }
-      ],
-      specifications: [
-        { label: '북마크 저장', value: '무제한' },
-        { label: '카테고리', value: '무제한' },
-        { label: '저장 용량', value: '무제한' },
-        { label: '동시 접속 기기', value: '무제한' },
-        { label: '팀 멤버', value: '무제한' },
-        { label: '고객 지원', value: '24/7 전담 지원' },
-        { label: 'SLA', value: '99.9% 보장' },
-        { label: '데이터 백업', value: '실시간 백업' },
-        { label: 'API 액세스', value: '무제한' },
-        { label: 'SSO', value: '포함' },
-        { label: '온프레미스', value: '옵션 제공' }
-      ],
-      recommended: true
     }
   }
 
@@ -248,7 +203,7 @@ export default function ProductDetailPage() {
               onClick={() => router.push('/products')}
               className="text-blue-600 hover:text-blue-700"
             >
-              상품 목록으로 돌아가기
+              요금제 페이지로 돌아가기
             </button>
           </div>
         </div>
@@ -256,8 +211,44 @@ export default function ProductDetailPage() {
     )
   }
 
-  const yearlyPrice = product.price * 12 * 0.8 // 20% 할인
-  const displayPrice = selectedPeriod === 'monthly' ? product.price : Math.floor(yearlyPrice / 12)
+  // 무료 플랜은 바로 대시보드로
+  if (product.id === 'free') {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <DashboardHeader />
+        <div className="max-w-3xl mx-auto px-6 py-16 text-center">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            무료 플랜
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
+            지금 바로 무료로 시작하세요!
+          </p>
+          <button
+            onClick={() => {
+              if (session) {
+                router.push('/dashboard')
+              } else {
+                router.push('/login')
+              }
+            }}
+            className="bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+          >
+            {session ? '대시보드로 이동' : '로그인하고 시작하기'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const displayPrice = selectedPeriod === 'yearly'
+    ? Math.round(product.yearlyPrice / 12)
+    : product.price
+  const totalYearlyPrice = product.yearlyPrice
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -279,7 +270,7 @@ export default function ProductDetailPage() {
             onClick={() => router.push('/products')}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
-            상품
+            요금제
           </button>
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -293,15 +284,10 @@ export default function ProductDetailPage() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                {product.name}
+                {product.name} 플랜
               </h1>
               {product.popular && (
-                <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  인기
-                </span>
-              )}
-              {product.recommended && (
-                <span className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                   추천
                 </span>
               )}
@@ -312,18 +298,18 @@ export default function ProductDetailPage() {
 
             {/* Key Features */}
             <div className="space-y-3 mb-8">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100">주요 기능</h3>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100">포함된 기능</h3>
               {product.features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-2">
+                <div key={index} className="flex items-start gap-3">
                   <svg
-                    className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
+                    className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-600 dark:text-gray-400">{feature}</span>
+                  <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                 </div>
               ))}
             </div>
@@ -331,52 +317,51 @@ export default function ProductDetailPage() {
 
           {/* Right - Pricing Card */}
           <div className="lg:sticky lg:top-24 h-fit">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 shadow-lg">
+            <div className="bg-white dark:bg-gray-800 border-2 border-blue-600 dark:border-blue-500 rounded-2xl p-8 shadow-xl">
               {/* Period Toggle */}
-              {product.price > 0 && (
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <button
-                    onClick={() => setSelectedPeriod('monthly')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedPeriod === 'monthly'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                    }`}
-                  >
-                    월간
-                  </button>
-                  <button
-                    onClick={() => setSelectedPeriod('yearly')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedPeriod === 'yearly'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                    }`}
-                  >
-                    연간 <span className="text-xs">(20% 할인)</span>
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center justify-center gap-2 mb-6 bg-gray-100 dark:bg-gray-700 p-1.5 rounded-xl">
+                <button
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                    selectedPeriod === 'monthly'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  월간
+                </button>
+                <button
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                    selectedPeriod === 'yearly'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  연간
+                  <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">
+                    17% 할인
+                  </span>
+                </button>
+              </div>
 
               {/* Price */}
               <div className="text-center mb-6">
-                {product.originalPrice && (
-                  <div className="text-gray-400 line-through text-lg mb-1">
-                    ₩{product.originalPrice.toLocaleString()}
-                  </div>
-                )}
                 <div className="flex items-baseline justify-center gap-2">
                   <span className="text-5xl font-bold text-gray-900 dark:text-gray-100">
-                    {displayPrice === 0 ? '무료' : `₩${displayPrice.toLocaleString()}`}
+                    ₩{displayPrice.toLocaleString()}
                   </span>
-                  {displayPrice > 0 && (
-                    <span className="text-gray-600 dark:text-gray-400">/월</span>
-                  )}
+                  <span className="text-gray-500 dark:text-gray-400">/월</span>
                 </div>
-                {selectedPeriod === 'yearly' && product.price > 0 && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    연간 ₩{Math.floor(yearlyPrice).toLocaleString()} (월 ₩{Math.floor(yearlyPrice / 12).toLocaleString()})
-                  </div>
+                {selectedPeriod === 'yearly' && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    연 ₩{totalYearlyPrice.toLocaleString()} 청구
+                  </p>
+                )}
+                {selectedPeriod === 'monthly' && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                    연간 결제 시 17% 할인
+                  </p>
                 )}
               </div>
 
@@ -384,16 +369,15 @@ export default function ProductDetailPage() {
               <TossPaymentButton
                 productId={product.id}
                 productName={product.name}
-                amount={displayPrice}
+                amount={selectedPeriod === 'yearly' ? totalYearlyPrice : product.price}
                 period={selectedPeriod}
-                className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition-colors font-bold text-lg mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-bold text-lg mb-4 shadow-lg shadow-blue-500/25"
               />
 
-              {product.price > 0 && (
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  14일 무료 체험 • 언제든지 취소 가능
-                </p>
-              )}
+              <div className="space-y-2 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p>7일 무료 체험 포함</p>
+                <p>언제든지 취소 가능</p>
+              </div>
             </div>
           </div>
         </div>
@@ -403,20 +387,20 @@ export default function ProductDetailPage() {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
             상세 기능
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {product.detailedFeatures.map((section, index) => (
               <div
                 key={index}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6"
               >
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
                   {section.category}
                 </h3>
                 <ul className="space-y-2">
                   {section.items.map((item, itemIndex) => (
                     <li key={itemIndex} className="flex items-start gap-2">
                       <svg
-                        className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
+                        className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -442,9 +426,9 @@ export default function ProductDetailPage() {
         {/* Specifications */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
-            상세 스펙
+            스펙 비교
           </h2>
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             <table className="w-full">
               <tbody>
                 {product.specifications.map((spec, index) => (
@@ -452,7 +436,7 @@ export default function ProductDetailPage() {
                     key={index}
                     className={index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-700/50' : ''}
                   >
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 w-1/3">
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 w-1/2">
                       {spec.label}
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
@@ -470,51 +454,48 @@ export default function ProductDetailPage() {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
             자주 묻는 질문
           </h2>
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <div className="space-y-4 max-w-3xl">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
               <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2">
-                플랜 변경은 언제든지 가능한가요?
+                무료 체험은 어떻게 진행되나요?
               </h4>
               <p className="text-gray-600 dark:text-gray-400">
-                네, 언제든지 플랜을 업그레이드하거나 다운그레이드할 수 있습니다. 변경 시 일할 계산되어 청구됩니다.
+                결제 수단을 등록하면 7일 무료 체험이 시작됩니다. 체험 기간 동안 모든 프로 기능을 사용할 수 있으며, 체험 기간 종료 3일 전에 이메일로 알림을 보내드립니다.
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
               <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2">
-                환불 정책은 어떻게 되나요?
+                구독을 취소하면 어떻게 되나요?
               </h4>
               <p className="text-gray-600 dark:text-gray-400">
-                구매 후 7일 이내 전액 환불이 가능합니다. 단, 서비스를 실제로 사용한 경우 일할 계산되어 환불됩니다.
+                마이페이지에서 언제든 구독을 취소할 수 있습니다. 취소 후에도 결제 기간 종료일까지 프로 기능을 계속 사용할 수 있습니다. 이후 무료 플랜으로 자동 전환됩니다.
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
               <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2">
-                무료 체험 기간이 끝나면 자동으로 결제되나요?
+                환불이 가능한가요?
               </h4>
               <p className="text-gray-600 dark:text-gray-400">
-                무료 체험 기간이 끝나기 3일 전에 이메일로 알림을 보내드립니다. 체험 기간 중 언제든지 취소할 수 있으며, 취소하지 않으면 자동으로 유료 플랜으로 전환됩니다.
+                결제 후 7일 이내이며 서비스를 실질적으로 사용하지 않은 경우 전액 환불이 가능합니다. 마이페이지에서 환불을 요청하실 수 있습니다.
               </p>
             </div>
           </div>
         </div>
 
         {/* CTA Section */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-12 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {product.name} 플랜으로 시작하세요
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">
+            지금 프로 플랜을 시작하세요
           </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
-            {product.price === 0
-              ? '지금 바로 무료로 시작하고 AI 도구를 체계적으로 관리하세요'
-              : '14일 무료 체험으로 모든 기능을 경험해보세요'
-            }
+          <p className="text-xl text-white/80 mb-8">
+            7일 무료 체험으로 모든 기능을 경험해보세요
           </p>
           <TossPaymentButton
             productId={product.id}
             productName={product.name}
-            amount={displayPrice}
+            amount={selectedPeriod === 'yearly' ? totalYearlyPrice : product.price}
             period={selectedPeriod}
-            className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white text-blue-600 px-8 py-4 rounded-xl hover:bg-gray-100 transition-colors font-bold text-lg"
           />
         </div>
       </main>

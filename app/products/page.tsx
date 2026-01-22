@@ -3,310 +3,285 @@
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-
-interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  features: string[]
-  popular?: boolean
-}
+import { useSession } from 'next-auth/react'
 
 export default function ProductsPage() {
   const router = useRouter()
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const { data: session } = useSession()
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  const products: Product[] = [
-    {
-      id: 'basic',
-      name: '기본형',
-      description: '개인 사용자를 위한 필수 기능',
-      price: 0,
-      features: [
-        '북마크 20개 저장',
-        '카테고리 5개',
-        '기본 검색 기능',
-        '다크 모드 지원',
-        '모바일 앱 접근'
-      ]
-    },
-    {
-      id: 'premium',
-      name: '프리미엄',
-      description: '고급 기능이 필요한 전문가용',
-      price: 100,
-      features: [
-        '무제한 북마크',
-        '무제한 카테고리',
-        '고급 검색 및 필터',
-        '팀 협업 기능',
-        '우선 고객 지원',
-        '데이터 내보내기'
-      ],
-      popular: true
-    },
-    {
-      id: 'enterprise',
-      name: '엔터프라이즈',
-      description: '대규모 조직을 위한 맞춤형 솔루션',
-      price: 49900,
-      features: [
-        '프리미엄 모든 기능',
-        '전담 계정 관리자',
-        '맞춤형 통합 지원',
-        '보안 강화 옵션',
-        '온프레미스 배포',
-        'SLA 보장',
-        '교육 및 온보딩'
-      ]
+  const handleSubscribe = (productId: string) => {
+    if (productId === 'free') {
+      router.push(session ? '/dashboard' : '/login')
+      return
     }
-  ]
+    router.push(`/products/${productId}?billing=${billingCycle}`)
+  }
 
-  const comparisonFeatures = [
-    { name: '북마크 저장', basic: '20개', premium: '무제한', enterprise: '무제한' },
-    { name: '카테고리', basic: '5개', premium: '무제한', enterprise: '무제한' },
-    { name: '검색 기능', basic: '기본', premium: '고급', enterprise: '고급' },
-    { name: '팀 협업', basic: '', premium: '✓', enterprise: '✓' },
-    { name: '우선 지원', basic: '', premium: '✓', enterprise: '✓' },
-    { name: '데이터 내보내기', basic: '', premium: '✓', enterprise: '✓' },
-    { name: '전담 관리자', basic: '', premium: '', enterprise: '✓' },
-    { name: 'SLA 보장', basic: '', premium: '', enterprise: '✓' }
-  ]
+  const monthlyPrice = 4900
+  const yearlyPrice = 49000
+  const teamMonthlyPrice = 55000
+  const teamYearlyPrice = 550000
+  const displayPrice = billingCycle === 'yearly' ? Math.round(yearlyPrice / 12) : monthlyPrice
+  const teamDisplayPrice = billingCycle === 'yearly' ? Math.round(teamYearlyPrice / 12) : teamMonthlyPrice
 
   const faqs = [
     {
-      question: '무료 체험이 가능한가요?',
-      answer: '프리미엄 플랜은 14일 무료 체험이 가능합니다. 신용카드 등록 없이 바로 시작할 수 있습니다.'
+      q: '무료 플랜으로 충분한가요?',
+      a: '가볍게 AI 도구를 정리하고 싶은 분께는 무료 플랜으로도 충분합니다.'
     },
     {
-      question: '플랜 변경은 언제든지 가능한가요?',
-      answer: '네, 언제든지 플랜을 업그레이드하거나 다운그레이드할 수 있습니다. 변경 시 일할 계산되어 청구됩니다.'
+      q: '언제든 취소할 수 있나요?',
+      a: '네, 마이페이지에서 언제든 구독을 취소할 수 있습니다.'
     },
     {
-      question: '결제 방법은 무엇이 있나요?',
-      answer: '신용카드, 체크카드, 계좌이체, 무통장입금을 지원합니다. 기업 고객은 별도 견적 문의가 가능합니다.'
-    },
-    {
-      question: '환불 정책은 어떻게 되나요?',
-      answer: '구매 후 7일 이내 전액 환불이 가능합니다. 단, 서비스를 실제로 사용한 경우 일할 계산되어 환불됩니다.'
-    },
-    {
-      question: '엔터프라이즈 플랜은 어떻게 시작하나요?',
-      answer: '엔터프라이즈 플랜은 맞춤형 견적이 필요합니다. 영업팀에 문의하시면 상세한 상담을 받으실 수 있습니다.'
+      q: '환불이 가능한가요?',
+      a: '결제 후 7일 이내 미사용 시 전액 환불이 가능합니다.'
     }
   ]
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-gray-950">
       <DashboardHeader />
 
-      <main className="max-w-7xl mx-auto px-6">
-        {/* Page Header */}
-        <div className="py-16 lg:py-24 border-b border-gray-200 dark:border-gray-800">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            상품 소개
+      <main className="max-w-5xl mx-auto px-6 py-20">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
+            요금제
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
-            사용 목적에 맞는 최적의 플랜을 선택하세요
+          <p className="text-gray-500 dark:text-gray-400">
+            필요한 만큼만 사용하세요
           </p>
         </div>
 
-        {/* Product Category Tabs */}
-        <div className="py-8 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex gap-4 flex-wrap">
+        {/* Billing Toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-full">
             <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-2 text-sm font-medium rounded-full transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              전체
+              월간
             </button>
             <button
-              onClick={() => setSelectedCategory('individual')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                selectedCategory === 'individual'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-6 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                billingCycle === 'yearly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              개인용
-            </button>
-            <button
-              onClick={() => setSelectedCategory('business')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                selectedCategory === 'business'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              비즈니스용
+              연간
+              <span className="text-xs text-green-600 dark:text-green-400 font-semibold">-17%</span>
             </button>
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="py-16 lg:py-24 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className={`bg-white dark:bg-gray-800 border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow relative ${
-                product.popular
-                  ? 'border-blue-600 dark:border-blue-500'
-                  : 'border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              {product.popular && (
-                <div className="absolute -top-3 right-6">
-                  <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    인기
-                  </span>
-                </div>
-              )}
-
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                {product.name}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {product.description}
-              </p>
-
-              <div className="mb-6">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                    {product.price === 0 ? '무료' : `₩${product.price.toLocaleString()}`}
-                  </span>
-                  {product.price > 0 && (
-                    <span className="text-gray-600 dark:text-gray-400">/월</span>
-                  )}
-                </div>
-              </div>
-
-              <ul className="space-y-3 mb-6">
-                {product.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => router.push(`/products/${product.id}`)}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                자세히 보기
-              </button>
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-24">
+          {/* Free Plan */}
+          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">무료</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">시작하기 좋은 기본 플랜</p>
             </div>
-          ))}
+
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">₩0</span>
+            </div>
+
+            <button
+              onClick={() => handleSubscribe('free')}
+              className="w-full py-3 px-4 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mb-8"
+            >
+              무료로 시작
+            </button>
+
+            <ul className="space-y-3 text-sm">
+              {['북마크 30개', '카테고리 3개', '메모 10개', '구독 관리 5개', '다크 모드'].map((feature) => (
+                <li key={feature} className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Pro Plan */}
+          <div className="border-2 border-gray-900 dark:border-white rounded-2xl p-8 relative">
+            <div className="absolute -top-3 left-6">
+              <span className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-medium px-3 py-1 rounded-full">
+                추천
+              </span>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">프로</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">모든 기능을 무제한으로</p>
+            </div>
+
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                ₩{displayPrice.toLocaleString()}
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/월</span>
+              {billingCycle === 'yearly' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  연 ₩{yearlyPrice.toLocaleString()} 청구
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={() => handleSubscribe('pro')}
+              className="w-full py-3 px-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mb-8"
+            >
+              프로 시작하기
+            </button>
+
+            <ul className="space-y-3 text-sm">
+              {[
+                '무제한 북마크',
+                '무제한 카테고리',
+                '무제한 메모',
+                '무제한 구독 관리',
+                'Google 캘린더 연동',
+                'Gmail 구독 스캔',
+                '데이터 내보내기',
+                '우선 지원'
+              ].map((feature) => (
+                <li key={feature} className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                  <svg className="w-4 h-4 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Team Plan */}
+          <div className="border border-purple-300 dark:border-purple-700 rounded-2xl p-8 relative bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-gray-900">
+            <div className="absolute -top-3 left-6">
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+                팀/조직
+              </span>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">팀</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">10인까지 함께 사용</p>
+            </div>
+
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                ₩{teamDisplayPrice.toLocaleString()}
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/월</span>
+              {billingCycle === 'yearly' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  연 ₩{teamYearlyPrice.toLocaleString()} 청구
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={() => handleSubscribe('team')}
+              className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-indigo-700 transition-all mb-8"
+            >
+              팀 플랜 시작하기
+            </button>
+
+            <ul className="space-y-3 text-sm">
+              {[
+                '최대 10명 멤버',
+                '프로 플랜 모든 기능',
+                '팀 공유 대시보드',
+                '팀 공유 북마크',
+                '팀 공유 메모',
+                '멤버 권한 관리',
+                '팀 활동 분석',
+                '전담 지원'
+              ].map((feature) => (
+                <li key={feature} className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                  <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Comparison Table */}
-        <div className="py-16 lg:py-24">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-12 text-center">
-            플랜 비교
+        <div className="mb-24">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-10">
+            기능 비교
           </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-4 px-6 font-bold text-gray-900 dark:text-gray-100">
-                    기능
-                  </th>
-                  <th className="text-center py-4 px-6 font-bold text-gray-900 dark:text-gray-100">
-                    기본형
-                  </th>
-                  <th className="text-center py-4 px-6 font-bold text-gray-900 dark:text-gray-100">
-                    프리미엄
-                  </th>
-                  <th className="text-center py-4 px-6 font-bold text-gray-900 dark:text-gray-100">
-                    엔터프라이즈
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonFeatures.map((feature, index) => (
-                  <tr
-                    key={index}
-                    className="border-b border-gray-200 dark:border-gray-700"
-                  >
-                    <td className="py-4 px-6 text-gray-900 dark:text-gray-100">
-                      {feature.name}
-                    </td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-400">
-                      {feature.basic || '-'}
-                    </td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-400">
-                      {feature.premium || '-'}
-                    </td>
-                    <td className="py-4 px-6 text-center text-gray-600 dark:text-gray-400">
-                      {feature.enterprise || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="max-w-3xl mx-auto">
+            <div className="grid grid-cols-4 gap-4 pb-4 border-b border-gray-200 dark:border-gray-800 text-sm font-medium">
+              <div className="text-gray-500 dark:text-gray-400">기능</div>
+              <div className="text-center text-gray-500 dark:text-gray-400">무료</div>
+              <div className="text-center text-gray-900 dark:text-white">프로</div>
+              <div className="text-center text-purple-600 dark:text-purple-400">팀</div>
+            </div>
+            {[
+              { name: '북마크', free: '30개', pro: '무제한', team: '무제한' },
+              { name: '카테고리', free: '3개', pro: '무제한', team: '무제한' },
+              { name: '메모', free: '10개', pro: '무제한', team: '무제한' },
+              { name: '구독 관리', free: '5개', pro: '무제한', team: '무제한' },
+              { name: '캘린더 연동', free: '-', pro: '✓', team: '✓' },
+              { name: 'Gmail 스캔', free: '-', pro: '✓', team: '✓' },
+              { name: '데이터 내보내기', free: '-', pro: '✓', team: '✓' },
+              { name: '팀 멤버', free: '-', pro: '-', team: '최대 10명' },
+              { name: '공유 대시보드', free: '-', pro: '-', team: '✓' },
+              { name: '멤버 권한 관리', free: '-', pro: '-', team: '✓' },
+            ].map((row) => (
+              <div key={row.name} className="grid grid-cols-4 gap-4 py-4 border-b border-gray-100 dark:border-gray-800 text-sm">
+                <div className="text-gray-600 dark:text-gray-400">{row.name}</div>
+                <div className="text-center text-gray-400 dark:text-gray-500">{row.free}</div>
+                <div className="text-center text-gray-900 dark:text-white font-medium">{row.pro}</div>
+                <div className="text-center text-purple-600 dark:text-purple-400 font-medium">{row.team}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="py-16 lg:py-24">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-12 text-center">
+        {/* FAQ */}
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-10">
             자주 묻는 질문
           </h2>
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="space-y-2">
             {faqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-              >
+              <div key={index} className="border-b border-gray-100 dark:border-gray-800">
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="w-full py-5 flex items-center justify-between text-left"
                 >
-                  <span className="font-bold text-gray-900 dark:text-gray-100">
-                    {faq.question}
-                  </span>
+                  <span className="text-gray-900 dark:text-white font-medium">{faq.q}</span>
                   <svg
-                    className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
-                      openFaq === index ? 'rotate-180' : ''
-                    }`}
+                    className={`w-5 h-5 text-gray-400 transition-transform ${openFaq === index ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {openFaq === index && (
-                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {faq.answer}
-                    </p>
-                  </div>
+                  <p className="pb-5 text-gray-500 dark:text-gray-400 text-sm">
+                    {faq.a}
+                  </p>
                 )}
               </div>
             ))}

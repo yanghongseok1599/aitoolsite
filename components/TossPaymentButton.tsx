@@ -12,6 +12,27 @@ interface TossPaymentButtonProps {
   className?: string
 }
 
+declare global {
+  interface Window {
+    TossPayments: (clientKey: string) => {
+      requestBillingAuth: (method: string, options: {
+        customerKey: string
+        successUrl: string
+        failUrl: string
+      }) => Promise<void>
+      requestPayment: (method: string, options: {
+        amount: number
+        orderId: string
+        orderName: string
+        customerName: string
+        customerEmail: string
+        successUrl: string
+        failUrl: string
+      }) => Promise<void>
+    }
+  }
+}
+
 export function TossPaymentButton({
   productId,
   productName,
@@ -32,27 +53,16 @@ export function TossPaymentButton({
     }
 
     // 무료 플랜인 경우
-    if (amount === 0) {
-      router.push('/')
+    if (amount === 0 || productId === 'free') {
+      router.push('/dashboard')
       return
     }
 
     setIsLoading(true)
 
     try {
-      // 주문 ID 생성
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-      // 결제 데이터 준비
-      const paymentData = {
-        amount,
-        orderId,
-        orderName: `${productName} - ${period === 'monthly' ? '월간' : '연간'} 구독`,
-        customerName: session.user?.name || '데모 사용자',
-        customerEmail: session.user?.email || 'demo@example.com',
-        productId,
-        period
-      }
+      // 고객 키 생성 (사용자 ID 기반)
+      const customerKey = `customer_${session.user?.id || session.user?.email?.replace(/[^a-zA-Z0-9]/g, '_')}`
 
       // 토스페이먼츠 SDK 동적 로드
       const script = document.createElement('script')
@@ -60,25 +70,17 @@ export function TossPaymentButton({
       script.async = true
 
       script.onload = () => {
-        // 데모용 클라이언트 키 (토스페이먼츠 공개 테스트 키)
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'
+        const tossPayments = window.TossPayments(clientKey)
 
-        const tossPayments = (window as any).TossPayments(clientKey)
-
-        // 결제창 호출
-        tossPayments.requestPayment('카드', {
-          amount: amount,
-          orderId: orderId,
-          orderName: paymentData.orderName,
-          customerName: paymentData.customerName,
-          customerEmail: paymentData.customerEmail,
-          successUrl: `${window.location.origin}/payments/success`,
+        // 빌링키 발급을 위한 카드 등록 요청
+        tossPayments.requestBillingAuth('카드', {
+          customerKey,
+          successUrl: `${window.location.origin}/payments/billing-success?planId=${productId}&period=${period}`,
           failUrl: `${window.location.origin}/payments/fail`,
-        }).catch((error: any) => {
+        }).catch((error: { code: string; message: string }) => {
           if (error.code === 'USER_CANCEL') {
             alert('결제를 취소하셨습니다.')
-          } else if (error.code === 'INVALID_CARD_COMPANY') {
-            alert('유효하지 않은 카드입니다.')
           } else {
             alert('결제 중 오류가 발생했습니다: ' + error.message)
           }
@@ -100,13 +102,19 @@ export function TossPaymentButton({
     }
   }
 
+  const getButtonText = () => {
+    if (isLoading) return '처리 중...'
+    if (amount === 0 || productId === 'free') return '무료로 시작하기'
+    return '구독 시작하기'
+  }
+
   return (
     <button
       onClick={handlePayment}
       disabled={isLoading}
       className={className}
     >
-      {isLoading ? '처리 중...' : (amount === 0 ? '무료로 시작하기' : '구매하기')}
+      {getButtonText()}
     </button>
   )
 }

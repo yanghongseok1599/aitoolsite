@@ -55,19 +55,19 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
     <section
       ref={setSortableRef}
       style={style}
-      className="mb-8 transform-gpu rounded-lg"
+      className="mb-6 transform-gpu rounded-2xl"
     >
       {/* Category Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2 group flex-1">
           {/* Drag Handle */}
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
             title="드래그하여 순서 변경"
           >
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
             </svg>
           </button>
@@ -75,21 +75,21 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
           {/* Expand/Collapse Button */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 group/title"
           >
             <svg
-              className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+              className={`w-4 h-4 text-gray-400 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent group-hover/title:from-primary group-hover/title:to-purple-600 transition-all duration-200">
               {title}
             </h2>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              ({bookmarks.length})
+            <span className="text-xs font-medium text-gray-400 dark:text-gray-500 opacity-60">
+              {bookmarks.length}
             </span>
           </button>
 
@@ -97,10 +97,10 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
           {onEditCategory && (
             <button
               onClick={onEditCategory}
-              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 opacity-0 group-hover:opacity-100"
               title="카테고리 이름 수정"
             >
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>
@@ -110,10 +110,10 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
           {onDeleteCategory && (
             <button
               onClick={onDeleteCategory}
-              className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100"
+              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 opacity-0 group-hover:opacity-100"
               title="카테고리 삭제"
             >
-              <svg className="w-4 h-4 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-red-400 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
@@ -121,17 +121,21 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
         </div>
       </div>
 
-      {/* Droppable Bookmarks Area */}
-      {isExpanded && (
+      {/* Droppable Bookmarks Area with smooth collapse */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-out ${
+          isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
         <div
           ref={setDroppableRef}
-          className={`min-h-[100px] rounded-lg transition-all duration-200 ${
-            isOver ? 'bg-primary/10 ring-2 ring-primary/50 ring-dashed p-2' : ''
+          className={`min-h-[80px] rounded-xl transition-all duration-200 ${
+            isOver ? 'bg-primary/5 ring-2 ring-primary/30 ring-dashed p-2' : ''
           }`}
         >
           {bookmarks.length > 0 ? (
             <SortableContext items={bookmarks.map(b => b.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1 sm:gap-2">
                 {bookmarks.map((bookmark) => (
                   <BookmarkCard
                     key={bookmark.id}
@@ -147,36 +151,40 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
 
                 {/* Add New Card */}
                 {onAddBookmark && (
-                  <button
-                    onClick={onAddBookmark}
-                    className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
-                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex flex-col items-center space-y-1 p-1">
+                    <button
+                      onClick={onAddBookmark}
+                      className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600
+                        flex items-center justify-center
+                        hover:border-primary hover:bg-primary/10 hover:scale-110
+                        active:scale-95
+                        transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5 text-gray-400 hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
+                    </button>
+                    <span className="text-[10px] font-medium text-gray-400 leading-tight pointer-events-none">
                       추가
                     </span>
-                  </button>
+                  </div>
                 )}
               </div>
             </SortableContext>
           ) : (
             /* Empty State */
-            <div className={`p-8 border-2 border-dashed rounded-lg text-center transition-colors ${
-              isOver ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-700'
+            <div className={`p-6 border-2 border-dashed rounded-xl text-center transition-all duration-200 ${
+              isOver ? 'border-primary bg-primary/5' : 'border-gray-200 dark:border-gray-700'
             }`}>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-sm text-gray-400 dark:text-gray-500 mb-3">
                 {isOver ? '여기에 북마크를 놓으세요' : '북마크를 이 카테고리로 드래그하세요'}
               </p>
               {onAddBookmark && (
                 <button
                   onClick={onAddBookmark}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-sm rounded-lg transition-all duration-200 font-medium hover:shadow-md hover:shadow-primary/10"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   북마크 추가
@@ -185,7 +193,7 @@ export function CategorySection({ id, title, bookmarks, onAddBookmark, onEditBoo
             </div>
           )}
         </div>
-      )}
+      </div>
     </section>
   )
 }

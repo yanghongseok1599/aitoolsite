@@ -47,7 +47,9 @@
       "Bash(del \"c:\\AI PROJECT\\AI TOOL SITE\\.env.vercel\")",
       "Bash(rm:*)",
       "Bash(del /f \"c:\\AI PROJECT\\AI TOOL SITE\\.env.vercel\")",
-      "Bash(printf:*)"
+      "Bash(printf:*)",
+      "Bash(npm run build:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

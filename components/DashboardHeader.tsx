@@ -24,8 +24,8 @@ export function DashboardHeader({ onAddCategory }: DashboardHeaderProps) {
       submenu: [
         { name: '스마트 캘린더', href: '/calendar' },
         { name: '메모 & 노트', href: '/notes' },
-        { name: 'AI 사용 통계', href: '/analytics' },
-        { name: 'AI 구독 관리', href: '/subscription' },
+        { name: '포모도로 타이머', href: '/pomodoro' },
+        { name: '투두 리스트', href: '/todolist' },
       ]
     },
     { name: '요금제', href: '/products' }

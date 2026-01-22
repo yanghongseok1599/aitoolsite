@@ -172,13 +172,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Account Info */}
-          <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-sm rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-            <p className="text-xs text-blue-600 dark:text-blue-400 text-center">
-              <strong>테스트 계정:</strong> demo@example.com / demo123
-            </p>
-          </div>
-
           {/* Signup Link */}
           <div className="mt-6 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
             <p className="text-center text-sm text-gray-600 dark:text-gray-400">

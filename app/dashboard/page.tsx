@@ -759,6 +759,8 @@ export default function Home() {
   const [tempDescription, setTempDescription] = useState('')
   const [widgetSettingsModal, setWidgetSettingsModal] = useState<{ isOpen: boolean; widgetId: string | null }>({ isOpen: false, widgetId: null })
   const [widgetSettings, setWidgetSettings] = useState<{ [key: string]: any }>({})
+  const [floatingWidgets, setFloatingWidgets] = useState<string[]>([])
+  const [draggingFloatingWidget, setDraggingFloatingWidget] = useState<string | null>(null)
 
   // Ad banner states
   const [adBannerSettings, setAdBannerSettings] = useState<{
@@ -1771,27 +1773,40 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Section - Quick Access Features */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Right Section - Quick Access Features with Circular Icons */}
+            <div className="grid grid-cols-4 gap-4">
               {[
-                { name: '캘린더', href: '/calendar', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-                { name: '메모', href: '/notes', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
-                { name: '통계', href: '/analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-                { name: '구독', href: '/subscription', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
-                { name: '목표', href: '/goals', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-                { name: '추천', href: '/recommendations', icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
-                { name: '학습', href: '/learning', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
-                { name: '템플릿', href: '/templates', icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z' },
+                { name: '캘린더', widgetId: 'monthly-calendar', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', gradient: 'from-green-400 to-emerald-500' },
+                { name: '메모', widgetId: 'notes', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', gradient: 'from-yellow-400 to-orange-500' },
+                { name: '목표', widgetId: 'todolist', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', gradient: 'from-purple-400 to-violet-500' },
+                { name: '구독', widgetId: null, href: '/mypage/subscription', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', gradient: 'from-blue-400 to-indigo-500' },
               ].map((item) => (
                 <button
                   key={item.name}
-                  onClick={() => router.push(item.href)}
-                  className="bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/20 transition-all group flex flex-col items-center justify-center"
+                  onClick={() => {
+                    if (item.href) {
+                      router.push(item.href)
+                    } else if (item.widgetId) {
+                      // 토글: 이미 열려있으면 닫고, 아니면 추가
+                      if (floatingWidgets.includes(item.widgetId)) {
+                        setFloatingWidgets(floatingWidgets.filter(w => w !== item.widgetId))
+                      } else {
+                        setFloatingWidgets([...floatingWidgets, item.widgetId])
+                      }
+                    }
+                  }}
+                  className="group flex flex-col items-center justify-center gap-2"
                 >
-                  <svg className="w-6 h-6 text-white/80 group-hover:text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                  </svg>
-                  <span className="text-xs text-white/80 group-hover:text-white">{item.name}</span>
+                  <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg transition-all duration-300 ${
+                    floatingWidgets.includes(item.widgetId || '')
+                      ? 'ring-3 ring-white/60 scale-110 shadow-xl'
+                      : 'group-hover:scale-110 group-hover:shadow-xl'
+                  }`}>
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium text-white/90">{item.name}</span>
                 </button>
               ))}
             </div>
@@ -1799,7 +1814,7 @@ export default function Home() {
         </div>
 
         {/* Main Content - Dynamic Layout based on widget presence */}
-        <div className={`grid grid-cols-1 ${widgetOrder.length > 0 ? 'lg:grid-cols-12' : ''} gap-6`}>
+        <div className={`grid grid-cols-1 ${widgetOrder.length > 0 ? 'lg:grid-cols-12' : ''} gap-6 transition-all duration-300 ${floatingWidgets.length > 0 ? 'mr-[360px]' : ''}`}>
             {/* Left Column - AI Tools (Categories) */}
             <div className={widgetOrder.length > 0 ? 'lg:col-span-8' : ''}>
               <SortableContext items={categoryOrder} strategy={verticalListSortingStrategy}>
@@ -2030,6 +2045,109 @@ export default function Home() {
             setEditingAdBanner(null)
           }}
         />
+      )}
+
+      {/* Floating Widgets - Right Side Vertical */}
+      {floatingWidgets.length > 0 && (
+        <div className="fixed top-[300px] right-6 bottom-6 z-50 flex flex-col gap-3 items-end overflow-y-auto scrollbar-hide">
+          {floatingWidgets.map((widgetId, index) => {
+            const widgetNames: { [key: string]: string } = {
+              'monthly-calendar': '월간 캘린더',
+              'notes': '메모',
+              'calendar': '일정 목록',
+              'weather': '날씨',
+              'pomodoro': '포모도로',
+              'quote': '명언',
+              'todolist': '할 일 목록'
+            }
+
+            return (
+              <div
+                key={widgetId}
+                draggable
+                onDragStart={(e) => {
+                  setDraggingFloatingWidget(widgetId)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => setDraggingFloatingWidget(null)}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (draggingFloatingWidget && draggingFloatingWidget !== widgetId) {
+                    const fromIndex = floatingWidgets.indexOf(draggingFloatingWidget)
+                    const toIndex = floatingWidgets.indexOf(widgetId)
+                    const newOrder = [...floatingWidgets]
+                    newOrder.splice(fromIndex, 1)
+                    newOrder.splice(toIndex, 0, draggingFloatingWidget)
+                    setFloatingWidgets(newOrder)
+                  }
+                  setDraggingFloatingWidget(null)
+                }}
+                className={`w-[340px] rounded-2xl shadow-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 animate-in slide-in-from-right-5 duration-300 transition-all flex-shrink-0 ${
+                  widgetId === 'monthly-calendar' ? 'max-h-[480px]' : 'max-h-[380px]'
+                } overflow-auto ${
+                  draggingFloatingWidget === widgetId ? 'opacity-50 scale-95' : ''
+                } ${draggingFloatingWidget && draggingFloatingWidget !== widgetId ? 'ring-2 ring-primary/30' : ''}`}
+              >
+                {/* Header */}
+                <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-t-2xl cursor-grab active:cursor-grabbing">
+                  <div className="flex items-center gap-2">
+                    {/* Drag handle */}
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                    </svg>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                      {widgetNames[widgetId] || widgetId}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {/* Add to sidebar button */}
+                    {!widgetOrder.includes(widgetId) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddWidget(widgetId)
+                          setFloatingWidgets(floatingWidgets.filter(w => w !== widgetId))
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title="사이드바에 추가"
+                      >
+                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* Close button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setFloatingWidgets(floatingWidgets.filter(w => w !== widgetId))
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {/* Widget Content */}
+                <div className="p-4">
+                  {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
+                  {widgetId === 'notes' && <NotesWidget />}
+                  {widgetId === 'calendar' && <CalendarWidget />}
+                  {widgetId === 'weather' && <WeatherWidget />}
+                  {widgetId === 'pomodoro' && <PomodoroWidget />}
+                  {widgetId === 'quote' && <QuoteWidget />}
+                  {widgetId === 'todolist' && <TodoListWidget />}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
