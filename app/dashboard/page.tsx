@@ -1792,6 +1792,10 @@ export default function Home() {
                         setFloatingWidgets(floatingWidgets.filter(w => w !== item.widgetId))
                       } else {
                         setFloatingWidgets([...floatingWidgets, item.widgetId])
+                        // 첫 카테고리 위치로 스크롤
+                        setTimeout(() => {
+                          document.getElementById('main-content-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 100)
                       }
                     }
                   }}
@@ -1814,7 +1818,7 @@ export default function Home() {
         </div>
 
         {/* Main Content - Dynamic Layout based on widget presence */}
-        <div className={`flex gap-6 transition-all duration-300`}>
+        <div id="main-content-area" className={`flex gap-6 transition-all duration-300`}>
             {/* Left Column - AI Tools (Categories) */}
             <div className={`flex-1 min-w-0`}>
               <SortableContext items={categoryOrder} strategy={verticalListSortingStrategy}>
