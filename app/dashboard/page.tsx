@@ -1865,24 +1865,68 @@ export default function Home() {
             {widgetOrder.length > 0 && (
               <div className="w-[340px] flex-shrink-0">
                 <SortableContext items={widgetOrder} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-6">
-                    {widgetOrder.map((widgetId) => (
-                      <SortableWidget
-                        key={widgetId}
-                        id={widgetId}
-                        onMoveToBanner={handleMoveToBanner}
-                        onRemove={handleRemoveWidget}
-                        canMoveToBanner={bannerWidgets.length < 4}
-                      >
-                        {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
-                        {widgetId === 'notes' && <NotesWidget />}
-                        {widgetId === 'calendar' && <CalendarWidget />}
-                        {widgetId === 'weather' && <WeatherWidget />}
-                        {widgetId === 'pomodoro' && <PomodoroWidget />}
-                        {widgetId === 'quote' && <QuoteWidget />}
-                        {widgetId === 'todolist' && <TodoListWidget />}
-                      </SortableWidget>
-                    ))}
+                  <div className="space-y-4">
+                    {widgetOrder.map((widgetId) => {
+                      const widgetNames: { [key: string]: string } = {
+                        'monthly-calendar': '월간 캘린더',
+                        'notes': '메모',
+                        'calendar': '일정 목록',
+                        'weather': '날씨',
+                        'pomodoro': '포모도로',
+                        'quote': '명언',
+                        'todolist': '할 일 목록'
+                      }
+                      return (
+                        <SortableWidget
+                          key={widgetId}
+                          id={widgetId}
+                          onMoveToBanner={handleMoveToBanner}
+                          onRemove={handleRemoveWidget}
+                          canMoveToBanner={bannerWidgets.length < 4}
+                        >
+                          <div className="rounded-2xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/95">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                </svg>
+                                <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                                  {widgetNames[widgetId] || widgetId}
+                                </h3>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleAddWidget(widgetId)}
+                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                  title="사이드바에 추가"
+                                >
+                                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveWidget(widgetId)}
+                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
+                              {widgetId === 'notes' && <NotesWidget />}
+                              {widgetId === 'calendar' && <CalendarWidget />}
+                              {widgetId === 'weather' && <WeatherWidget />}
+                              {widgetId === 'pomodoro' && <PomodoroWidget />}
+                              {widgetId === 'quote' && <QuoteWidget />}
+                              {widgetId === 'todolist' && <TodoListWidget />}
+                            </div>
+                          </div>
+                        </SortableWidget>
+                      )
+                    })}
                   </div>
                 </SortableContext>
               </div>
