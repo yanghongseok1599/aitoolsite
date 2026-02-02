@@ -2047,9 +2047,9 @@ export default function Home() {
         />
       )}
 
-      {/* Floating Widgets - Right Side Vertical */}
+      {/* Floating Widgets - Right Side Vertical (sticky, scrolls with page) */}
       {floatingWidgets.length > 0 && (
-        <div className="fixed top-[300px] right-6 bottom-6 z-50 flex flex-col gap-3 items-end overflow-y-auto scrollbar-hide">
+        <div className="fixed top-20 right-6 bottom-6 z-50 flex flex-col gap-3 items-end overflow-y-auto scrollbar-hide pt-2">
           {floatingWidgets.map((widgetId, index) => {
             const widgetNames: { [key: string]: string } = {
               'monthly-calendar': '월간 캘린더',
