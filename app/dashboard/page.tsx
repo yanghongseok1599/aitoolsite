@@ -1814,9 +1814,9 @@ export default function Home() {
         </div>
 
         {/* Main Content - Dynamic Layout based on widget presence */}
-        <div className={`grid grid-cols-1 ${widgetOrder.length > 0 ? 'lg:grid-cols-12' : ''} gap-6 transition-all duration-300 ${floatingWidgets.length > 0 ? 'mr-[360px]' : ''}`}>
+        <div className={`flex gap-6 transition-all duration-300`}>
             {/* Left Column - AI Tools (Categories) */}
-            <div className={widgetOrder.length > 0 ? 'lg:col-span-8' : ''}>
+            <div className={`flex-1 min-w-0`}>
               <SortableContext items={categoryOrder} strategy={verticalListSortingStrategy}>
                 {categoryOrder.map((category) => (
                   <CategorySection
@@ -1859,7 +1859,7 @@ export default function Home() {
 
             {/* Right Column - Widgets (Monthly Calendar, Notes & Calendar) - Only show when widgets exist */}
             {widgetOrder.length > 0 && (
-              <div className="lg:col-span-4">
+              <div className="w-[340px] flex-shrink-0">
                 <SortableContext items={widgetOrder} strategy={verticalListSortingStrategy}>
                   <div className="space-y-6">
                     {widgetOrder.map((widgetId) => (
@@ -1881,6 +1881,83 @@ export default function Home() {
                     ))}
                   </div>
                 </SortableContext>
+              </div>
+            )}
+
+            {/* Floating Widgets Column - appears when quick access buttons are clicked */}
+            {floatingWidgets.filter(w => !widgetOrder.includes(w)).length > 0 && (
+              <div className="w-[340px] flex-shrink-0">
+                <div className="space-y-4">
+                  {floatingWidgets.filter(w => !widgetOrder.includes(w)).map((widgetId) => {
+                    const widgetNames: { [key: string]: string } = {
+                      'monthly-calendar': '월간 캘린더',
+                      'notes': '메모',
+                      'calendar': '일정 목록',
+                      'weather': '날씨',
+                      'pomodoro': '포모도로',
+                      'quote': '명언',
+                      'todolist': '할 일 목록'
+                    }
+                    return (
+                      <div
+                        key={widgetId}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggingFloatingWidget(widgetId)
+                          e.dataTransfer.effectAllowed = 'move'
+                        }}
+                        onDragEnd={() => setDraggingFloatingWidget(null)}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (draggingFloatingWidget && draggingFloatingWidget !== widgetId) {
+                            const fromIndex = floatingWidgets.indexOf(draggingFloatingWidget)
+                            const toIndex = floatingWidgets.indexOf(widgetId)
+                            const newOrder = [...floatingWidgets]
+                            newOrder.splice(fromIndex, 1)
+                            newOrder.splice(toIndex, 0, draggingFloatingWidget)
+                            setFloatingWidgets(newOrder)
+                          }
+                          setDraggingFloatingWidget(null)
+                        }}
+                        className={`rounded-2xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden transition-all ${
+                          draggingFloatingWidget === widgetId ? 'opacity-50 scale-95' : ''
+                        } ${draggingFloatingWidget && draggingFloatingWidget !== widgetId ? 'ring-2 ring-primary/30' : ''}`}
+                      >
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/95 cursor-grab active:cursor-grabbing">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                            </svg>
+                            <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                              {widgetNames[widgetId] || widgetId}
+                            </h3>
+                          </div>
+                          <button
+                            onClick={() => setFloatingWidgets(floatingWidgets.filter(w => w !== widgetId))}
+                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div>
+                          {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
+                          {widgetId === 'notes' && <NotesWidget />}
+                          {widgetId === 'calendar' && <CalendarWidget />}
+                          {widgetId === 'weather' && <WeatherWidget />}
+                          {widgetId === 'pomodoro' && <PomodoroWidget />}
+                          {widgetId === 'quote' && <QuoteWidget />}
+                          {widgetId === 'todolist' && <TodoListWidget />}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -2047,108 +2124,6 @@ export default function Home() {
         />
       )}
 
-      {/* Floating Widgets - Right Side Vertical (sticky, scrolls with page) */}
-      {floatingWidgets.length > 0 && (
-        <div className="fixed top-20 right-6 bottom-6 z-50 flex flex-col gap-3 items-end overflow-y-auto scrollbar-hide pt-2">
-          {floatingWidgets.map((widgetId, index) => {
-            const widgetNames: { [key: string]: string } = {
-              'monthly-calendar': '월간 캘린더',
-              'notes': '메모',
-              'calendar': '일정 목록',
-              'weather': '날씨',
-              'pomodoro': '포모도로',
-              'quote': '명언',
-              'todolist': '할 일 목록'
-            }
-
-            return (
-              <div
-                key={widgetId}
-                draggable
-                onDragStart={(e) => {
-                  setDraggingFloatingWidget(widgetId)
-                  e.dataTransfer.effectAllowed = 'move'
-                }}
-                onDragEnd={() => setDraggingFloatingWidget(null)}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = 'move'
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  if (draggingFloatingWidget && draggingFloatingWidget !== widgetId) {
-                    const fromIndex = floatingWidgets.indexOf(draggingFloatingWidget)
-                    const toIndex = floatingWidgets.indexOf(widgetId)
-                    const newOrder = [...floatingWidgets]
-                    newOrder.splice(fromIndex, 1)
-                    newOrder.splice(toIndex, 0, draggingFloatingWidget)
-                    setFloatingWidgets(newOrder)
-                  }
-                  setDraggingFloatingWidget(null)
-                }}
-                className={`w-[340px] rounded-2xl shadow-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 animate-in slide-in-from-right-5 duration-300 transition-all flex-shrink-0 ${
-                  widgetId === 'monthly-calendar' ? 'max-h-[480px]' : 'max-h-[380px]'
-                } overflow-auto ${
-                  draggingFloatingWidget === widgetId ? 'opacity-50 scale-95' : ''
-                } ${draggingFloatingWidget && draggingFloatingWidget !== widgetId ? 'ring-2 ring-primary/30' : ''}`}
-              >
-                {/* Header */}
-                <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-t-2xl cursor-grab active:cursor-grabbing">
-                  <div className="flex items-center gap-2">
-                    {/* Drag handle */}
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                    </svg>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      {widgetNames[widgetId] || widgetId}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {/* Add to sidebar button */}
-                    {!widgetOrder.includes(widgetId) && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleAddWidget(widgetId)
-                          setFloatingWidgets(floatingWidgets.filter(w => w !== widgetId))
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        title="사이드바에 추가"
-                      >
-                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
-                    )}
-                    {/* Close button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setFloatingWidgets(floatingWidgets.filter(w => w !== widgetId))
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                {/* Widget Content */}
-                <div className="p-4">
-                  {widgetId === 'monthly-calendar' && <MonthlyCalendar />}
-                  {widgetId === 'notes' && <NotesWidget />}
-                  {widgetId === 'calendar' && <CalendarWidget />}
-                  {widgetId === 'weather' && <WeatherWidget />}
-                  {widgetId === 'pomodoro' && <PomodoroWidget />}
-                  {widgetId === 'quote' && <QuoteWidget />}
-                  {widgetId === 'todolist' && <TodoListWidget />}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
